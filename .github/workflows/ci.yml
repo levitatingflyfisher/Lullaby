@@ -1,0 +1,62 @@
+# Release workflow intentionally omitted — applicationId is still com.example.lullaby.
+# Add release.yml once applicationId is updated to a published identifier.
+
+name: CI
+
+on:
+  push:
+    branches: [master]
+    tags: ['v*.*.*']
+  pull_request:
+    branches: [master]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: Lullaby
+
+      - name: Vendor the encrypted-backup auth module (upstream is out-of-repo)
+        # GitHub Actions cannot check out the private upstream crypto package
+        # (it 404s for the workflow token), so CI uses the in-repo stub under
+        # ci/ to satisfy the path dependency declared in pubspec.yaml. The stub
+        # reproduces the public API + OHBK wire format but is not the audited
+        # library; it is never used in release builds. See CODE_REVIEW_FINDINGS.md.
+        run: |
+          mkdir -p packages
+          cp -r Lullaby/ci/auth_stub packages/sanctuary_auth_core
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          # Must bundle Dart >= 3.10.7 to satisfy pubspec's `environment: sdk`.
+          # 3.29.x shipped Dart 3.7.2 and failed version resolution.
+          flutter-version: '3.44.2'
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        working-directory: Lullaby
+        run: flutter pub get
+
+      - name: Generate code (build_runner / drift)
+        working-directory: Lullaby
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Analyze
+        working-directory: Lullaby
+        run: flutter analyze
+
+      - name: Run tests
+        working-directory: Lullaby
+        run: flutter test

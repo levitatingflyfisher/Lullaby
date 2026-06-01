@@ -1,0 +1,21 @@
+name: sanctuary_auth_core
+description: >
+  CI-only vendored stub of the encrypted-backup auth module. The real package
+  lives outside this repository (consumed via the path dependency declared in
+  the app pubspec) and is private, so GitHub Actions cannot check it out. CI
+  copies this stub into that location so the app compiles and the
+  non-crypto-internal test suite can run. It reproduces the public API surface
+  and the documented OHBK wire format with real ChaCha20-Poly1305 + PBKDF2, but
+  is NOT a substitute for the real, audited library in production.
+publish_to: none
+version: 0.0.0-ci-stub
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+  flutter: '>=3.10.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_riverpod: ^2.6.1
+  cryptography: ^2.7.0
