@@ -1,0 +1,1 @@
+Initial release! Track feedings, sleep, diapers, growth, medicines, and vaccines. Export data as PDF or CSV. Encrypted backup with recovery phrase. Home screen widget.
