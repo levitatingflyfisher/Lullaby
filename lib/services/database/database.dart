@@ -1,9 +1,4 @@
-import 'dart:io';
-
 import 'package:drift/drift.dart';
-import 'package:drift/native.dart';
-import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
 
 import 'tables.dart';
 import 'daos/baby_dao.dart';
@@ -13,6 +8,7 @@ import 'daos/diaper_dao.dart';
 import 'daos/growth_dao.dart';
 import 'daos/medicine_dao.dart';
 import 'daos/vaccine_dao.dart';
+import 'connection/connection.dart';
 
 part 'database.g.dart';
 
@@ -29,7 +25,7 @@ part 'database.g.dart';
   daos: [BabyDao, FeedingDao, SleepDao, DiaperDao, GrowthDao, MedicineDao, VaccineDao],
 )
 class AppDatabase extends _$AppDatabase {
-  AppDatabase() : super(_openConnection());
+  AppDatabase() : super(openConnection());
 
   AppDatabase.forTesting(super.e);
 
@@ -106,12 +102,4 @@ class AppDatabase extends _$AppDatabase {
       'ORDER BY modified_at DESC LIMIT 1)',
     );
   }
-}
-
-LazyDatabase _openConnection() {
-  return LazyDatabase(() async {
-    final dbFolder = await getApplicationDocumentsDirectory();
-    final file = File(p.join(dbFolder.path, 'lullaby.sqlite'));
-    return NativeDatabase.createInBackground(file);
-  });
 }
