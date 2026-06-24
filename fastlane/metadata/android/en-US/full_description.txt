@@ -1,0 +1,23 @@
+Lullaby is a free, open-source baby tracker that keeps all your data on your device. No accounts, no cloud, no ads, no tracking.
+
+Track everything in one place:
+• Feeding — breast, bottle, and solids with live timer and left/right toggle
+• Sleep — nap and night sessions with start/stop timer
+• Diapers — wet, dirty, mixed, with stool color
+• Growth — weight, height, and head circumference plotted on WHO percentile curves
+• Health — medicine doses and vaccination records
+• Statistics — feeding trends, sleep patterns, and diaper frequency charts
+• Calendar — browse events by day
+• Timeline — scrollable activity history with filter chips
+• Doctor summary — at-a-glance report you can share as PDF or CSV at appointments
+
+More features:
+• Encrypted backup — protect your data with a 12-word recovery phrase
+• Home screen widget — see last feed, sleep, and diaper at a glance with live timer
+• Multiple babies — manage profiles for more than one child
+• Dark mode — follows your system theme or set manually
+• Material You — dynamic color theming on supported devices
+
+Built by a nonprofit. No ads ever. No data collection ever.
+Source code: <REPO_URL_PLACEHOLDER>
+License: MIT

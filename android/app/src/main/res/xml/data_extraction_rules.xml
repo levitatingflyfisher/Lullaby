@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Lullaby stores all data locally and unencrypted (the privacy promise is
+  "all data stays on your device"). Exclude app data from both cloud backup
+  (Android 12+) and device-to-device transfer so the plaintext SQLite
+  database and photos never leave the device. See CODE_REVIEW_FINDINGS.md H1.
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="file" />
+        <exclude domain="database" />
+        <exclude domain="sharedpref" />
+        <exclude domain="external" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="file" />
+        <exclude domain="database" />
+        <exclude domain="sharedpref" />
+        <exclude domain="external" />
+    </device-transfer>
+</data-extraction-rules>
