@@ -63,6 +63,14 @@ class _LullabyAppState extends ConsumerState<LullabyApp>
           theme: AppTheme.light(lightDynamic),
           darkTheme: AppTheme.dark(darkDynamic),
           routerConfig: router,
+          builder: (context, child) {
+            final inner = child ?? const SizedBox.shrink();
+            if (MediaQuery.of(context).size.width <= 760) return inner;
+            return ColoredBox(
+              color: Theme.of(context).scaffoldBackgroundColor,
+              child: Center(child: SizedBox(width: 760, child: inner)),
+            );
+          },
         );
       },
     );
