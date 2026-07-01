@@ -18,13 +18,25 @@ class PercentileBand {
 class PercentileCalculator {
   const PercentileCalculator();
 
-  /// Returns the approximate percentile (0–100) for a given measurement.
-  double getPercentile(
+  /// Whether [ageMonths] falls inside the 0–24 month window the WHO tables
+  /// here cover. The single source of truth for "can we honestly score this?"
+  static bool ageWithinWhoRange(double ageMonths) =>
+      ageMonths >= 0 && ageMonths <= 24;
+
+  /// Returns the approximate percentile (0–100) for a given measurement, or
+  /// null when no honest figure exists: the age is outside the 0–24 month
+  /// tables (clamping a 30-month-old onto the 24-month curves would fabricate
+  /// a number), or the measurement matches no band (e.g. NaN).
+  double? getPercentile(
     Gender gender,
     double ageMonths,
     double measurement,
     MeasurementType type,
   ) {
+    // Written as a positive containment check so a NaN age also lands here
+    // (every NaN comparison is false) instead of crashing in floor().
+    if (!ageWithinWhoRange(ageMonths)) return null;
+
     final bands = getPercentileBands(gender, type);
 
     // Interpolate each band's value at the fractional age rather than snapping
@@ -34,26 +46,52 @@ class PercentileCalculator {
       points[band.percentile] = _valueAtAge(band.values, ageMonths);
     }
 
+    return percentileFromBandPoints(points, measurement);
+  }
+
+  /// Interpolates a percentile from per-band values at a single age.
+  ///
+  /// Returns null when [points] is missing any canonical band (3/15/50/85/97)
+  /// or when [measurement] lands in no band — with strictly
+  /// ascending band values that only happens for NaN, which the old code
+  /// silently reported as the 50th percentile. Kept static and public so the
+  /// degenerate-band division guard is testable (real WHO tables never
+  /// trigger it).
+  static double? percentileFromBandPoints(
+    Map<int, double> points,
+    double measurement,
+  ) {
+    // A partial map has no honest answer either — return the documented
+    // null rather than null-asserting into a crash on a missing band.
+    final p3 = points[3];
+    final p97 = points[97];
+    if (p3 == null || p97 == null) return null;
     // If below 3rd percentile
-    if (measurement <= points[3]!) return 1.0;
+    if (measurement <= p3) return 1.0;
     // If above 97th percentile
-    if (measurement >= points[97]!) return 99.0;
+    if (measurement >= p97) return 99.0;
 
     // Linear interpolation between bands
     final percentiles = [3, 15, 50, 85, 97];
     for (int i = 0; i < percentiles.length - 1; i++) {
       final lowerP = percentiles[i];
       final upperP = percentiles[i + 1];
-      final lowerV = points[lowerP]!;
-      final upperV = points[upperP]!;
+      final lowerV = points[lowerP];
+      final upperV = points[upperP];
+      if (lowerV == null || upperV == null) return null;
 
       if (measurement >= lowerV && measurement <= upperV) {
+        // Degenerate band (lowerV == upperV): the fraction would be 0/0 = NaN.
+        // The measurement sits on both percentiles at once; report the middle.
+        if (upperV == lowerV) return (lowerP + upperP) / 2;
         final fraction = (measurement - lowerV) / (upperV - lowerV);
         return lowerP + fraction * (upperP - lowerP);
       }
     }
 
-    return 50.0;
+    // No band matched (NaN measurement, or non-monotone data): there is no
+    // honest percentile — never invent a median.
+    return null;
   }
 
   /// Linearly interpolates a band's value at a fractional age in months.

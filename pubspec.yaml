@@ -28,8 +28,12 @@ dependencies:
   share_plus: ^10.0.0
   home_widget: ^0.7.0
   file_picker: ^8.0.0
+  openhearth_design:
+    path: ../ohStyle/openhearth_design
   sanctuary_auth_core:
-    path: ci/auth_stub
+    path: ../packages/sanctuary_auth_core
+  sanctuary_backup_ui:
+    path: ../packages/sanctuary_backup_ui
 
 dev_dependencies:
   flutter_test:
@@ -40,6 +44,8 @@ dev_dependencies:
   sqlite3: ^2.9.4
   mocktail: ^1.0.4
   flutter_launcher_icons: ^0.14.3
+  oh_fleet_conformance:
+    path: ../packages/oh_fleet_conformance
 
 flutter_launcher_icons:
   android: true

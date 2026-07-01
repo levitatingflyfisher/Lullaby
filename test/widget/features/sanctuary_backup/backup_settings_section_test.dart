@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:sanctuary_auth_core/sanctuary_auth_core.dart';
-
-import 'package:lullaby/features/sanctuary_backup/presentation/widgets/backup_settings_section.dart';
+import 'package:sanctuary_backup_ui/sanctuary_backup_ui.dart';
+import 'package:sanctuary_backup_ui/testing.dart';
 
 class MockSecureKeyStore extends Mock implements SecureKeyStore {}
 
@@ -15,6 +15,15 @@ Widget _wrapWithProviders(
   return ProviderScope(
     overrides: [
       secureKeyStoreProvider.overrideWithValue(store),
+      // Lullaby's real backup wiring (legacy ghost-backup/v1 context).
+      sanctuaryBackupConfigProvider.overrideWithValue(
+        const SanctuaryBackupConfig(
+          appId: 'lullaby',
+          aadContext: 'ghost-backup/v1',
+          appDisplayName: 'Lullaby',
+        ),
+      ),
+      backupSerializerProvider.overrideWithValue(FakeBackupSerializer()),
     ],
     child: MaterialApp(home: Scaffold(body: ListView(children: [child]))),
   );

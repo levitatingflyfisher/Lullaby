@@ -3,12 +3,18 @@ import 'dart:math';
 import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:sanctuary_auth_core/sanctuary_auth_core.dart';
 import 'package:lullaby/features/sanctuary_backup/data/backup_serializer.dart';
-import 'package:lullaby/features/sanctuary_backup/domain/backup_repository.dart';
 import 'package:lullaby/services/database/database.dart';
+import 'package:sanctuary_auth_core/sanctuary_auth_core.dart';
+import 'package:sanctuary_backup_ui/sanctuary_backup_ui.dart';
 
 import '../../../test_setup.dart';
+
+/// Lullaby's own serializer round-tripping through the real EnvelopeCipher +
+/// the package BackupRepository, bound to Lullaby's legacy AEAD context
+/// (SANCTUARY-BRIEF §2.1, §2.3). This is the behaviour-preservation net for the
+/// re-wire onto sanctuary_backup_ui.
+const _ghostContext = 'ghost-backup/v1';
 
 Uint8List _deterministicKey(int seed) {
   final rng = Random(seed);
@@ -27,7 +33,8 @@ void main() {
 
   setUp(() {
     db = AppDatabase.forTesting(NativeDatabase.memory());
-    repo = BackupRepository(BackupSerializer(db), cipher);
+    repo = BackupRepository(LullabyBackupSerializer(db), cipher,
+        aadContext: _ghostContext);
   });
 
   tearDown(() => db.close());
@@ -52,7 +59,7 @@ void main() {
         ));
   }
 
-  group('BackupRepository', () {
+  group('BackupRepository (Lullaby serializer, ghost-backup/v1)', () {
     test('export produces OHBK blob', () async {
       await seedBaby();
       final blob = await repo.export(key);
@@ -67,7 +74,8 @@ void main() {
 
       // Restore into a fresh DB
       final db2 = AppDatabase.forTesting(NativeDatabase.memory());
-      final repo2 = BackupRepository(BackupSerializer(db2), cipher);
+      final repo2 = BackupRepository(LullabyBackupSerializer(db2), cipher,
+          aadContext: _ghostContext);
       await repo2.restore(blob, key);
 
       final babies = await db2.select(db2.babies).get();
@@ -92,6 +100,20 @@ void main() {
       );
     });
 
+    test('a blob from a different context cannot be restored', () async {
+      // §2.3: the AEAD context binds the blob — Lullaby's ghost-backup/v1 blob
+      // must not open under any other app's context.
+      await seedBaby();
+      final blob = await repo.export(key);
+
+      final otherRepo = BackupRepository(LullabyBackupSerializer(db), cipher,
+          aadContext: 'lullaby-backup/v1');
+      expect(
+        () => otherRepo.restore(blob, key),
+        throwsA(isA<CryptoException>()),
+      );
+    });
+
     test('truncated blob throws BackupFormatException', () async {
       await seedBaby();
       final blob = await repo.export(key);
@@ -107,7 +129,7 @@ void main() {
       await seedBaby();
       final blob = await repo.export(key);
 
-      // Header is 34 bytes (4 magic + 1 version + 1 suite + 12 nonce + 16 MAC).
+      // 34-byte prefix (4 magic + 1 version + 1 suite + 12 nonce + 16 MAC).
       // Flip a byte inside the ciphertext region.
       final corrupted = Uint8List.fromList(blob);
       corrupted[35] ^= 0xFF;

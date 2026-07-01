@@ -1,10 +1,10 @@
 import 'dart:async' show unawaited;
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'baby_photo.dart';
 import '../controllers/baby_controller.dart';
 import '../../../home_widget/presentation/controllers/home_widget_controller.dart';
 import '../../../settings/presentation/controllers/active_baby_controller.dart';
@@ -37,10 +37,9 @@ class BabySwitcherSheet extends ConsumerWidget {
               itemBuilder: (context, index) {
                 final baby = list[index];
                 final isActive = activeBaby?.id == baby.id;
-                final photo =
-                    baby.photoPath != null && File(baby.photoPath!).existsSync()
-                        ? FileImage(File(baby.photoPath!))
-                        : null;
+                // Via the baby_photo trio: null on web (no dart:io), null on
+                // native when the file is gone — either way the initial shows.
+                final photo = babyPhotoImage(baby.photoPath);
                 return ListTile(
                   leading: CircleAvatar(
                     backgroundImage: photo,

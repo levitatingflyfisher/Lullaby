@@ -177,6 +177,22 @@ class ExportService {
                   ],
               ],
             ),
+            if (summary.growthOutsideWhoRange) ...[
+              pw.SizedBox(height: 4),
+              pw.Text(
+                'WHO percentiles cover 0-24 months; '
+                'this measurement is outside that range.',
+                style: const pw.TextStyle(fontSize: 9),
+              ),
+            ],
+            if (summary.percentilesNeedRecordedSex) ...[
+              pw.SizedBox(height: 4),
+              pw.Text(
+                'WHO percentiles need a recorded sex; add one in the '
+                "baby's profile to see them.",
+                style: const pw.TextStyle(fontSize: 9),
+              ),
+            ],
             pw.SizedBox(height: 12),
           ],
           if (summary.recentMedicines.isNotEmpty) ...[
@@ -222,6 +238,12 @@ class ExportService {
   }
 
   String _csvCell(String s) {
+    // Neutralize spreadsheet formula injection (OWASP): a cell beginning with a
+    // formula trigger is apostrophe-prefixed so a free-text medicine/vaccine
+    // name can't execute as a formula when the medical CSV opens in a spreadsheet.
+    if (s.isNotEmpty && '=+-@\t\r'.contains(s[0])) {
+      s = "'$s";
+    }
     if (s.contains(',') || s.contains('"') || s.contains('\n')) {
       return '"${s.replaceAll('"', '""')}"';
     }
