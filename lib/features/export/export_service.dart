@@ -222,6 +222,12 @@ class ExportService {
   }
 
   String _csvCell(String s) {
+    // Neutralize spreadsheet formula injection (OWASP): a cell beginning with a
+    // formula trigger is apostrophe-prefixed so a free-text medicine/vaccine
+    // name can't execute as a formula when the medical CSV opens in a spreadsheet.
+    if (s.isNotEmpty && '=+-@\t\r'.contains(s[0])) {
+      s = "'$s";
+    }
     if (s.contains(',') || s.contains('"') || s.contains('\n')) {
       return '"${s.replaceAll('"', '""')}"';
     }

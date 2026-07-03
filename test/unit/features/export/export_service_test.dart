@@ -249,6 +249,28 @@ void main() {
       );
       expect(csv, contains('"say ""hi"""'));
     });
+
+    test('_csvCell neutralizes a leading spreadsheet-formula character', () {
+      final med = MedicineLogEntity(
+        id: 'm1',
+        babyId: 'b1',
+        medicineName: '=HYPERLINK("http://evil",1)',
+        administeredAt: DateTime(2026, 3, 1, 8),
+        createdAt: _now,
+        modifiedAt: _now,
+      );
+      final csv = svc.generateRawCsv(
+        feedings: [],
+        sleeps: [],
+        diapers: [],
+        growthRecords: [],
+        medicines: [med],
+        vaccines: [],
+      );
+      expect(csv, contains("'=HYPERLINK"),
+          reason: 'a leading = must be apostrophe-prefixed so the shared '
+              'medical CSV opens as text, not a live formula');
+    });
   });
 
   group('ExportService.generateRawCsv', () {
