@@ -2,12 +2,23 @@
 
 **FLOSS baby tracker for exhausted parents.**
 
-Lullaby is a privacy-first, offline baby tracking app. All data is stored locally on the device — no accounts, no cloud sync, no ads. Track feeds, sleep, diapers, growth, health records, and more, all in one place.
+Lullaby is a privacy-first, offline baby tracking app. All data is stored locally on the device — no accounts, no ads, no tracking. Track feeds, sleep, diapers, growth, health records, and more, all in one place.
 
 ![Platform: Android](https://img.shields.io/badge/platform-Android-brightgreen)
 ![Platform: iOS](https://img.shields.io/badge/platform-iOS-lightgrey)
 ![Platform: Linux](https://img.shields.io/badge/platform-Linux-blue)
 ![License: MIT](https://img.shields.io/badge/license-MIT-yellow)
+
+> **Vision.** A newborn generates a river of intimate medical data — when they
+> ate, how they slept, every medicine and vaccine. That record should live on
+> *your* phone and nowhere else. Lullaby is the calm, private, no-account
+> alternative to cloud baby trackers: your child's data never leaves the device
+> unless you deliberately export it.
+
+**New here?** Read the [Vision](VISION.md) for the one idea and the honest
+scorecard, then browse the [documentation](docs/README.md) (organized
+[Diátaxis](https://diataxis.fr/)-style). Contributing or using an AI agent in
+this repo? Start with [AGENTS.md](AGENTS.md).
 
 ---
 
@@ -152,7 +163,7 @@ flutter test
 flutter analyze
 ```
 
-The test suite covers domain entities, repository implementations (using an in-memory SQLite database), controllers, and widgets — 326 test cases across 48 test files.
+The test suite covers domain entities, repository implementations (using an in-memory SQLite database), controllers, widgets, and golden (visual) tests — roughly 450 test cases across ~75 test files. CI runs `flutter analyze` and `flutter test` on every push and pull request (see [`.github/workflows/ci.yml`](.github/workflows/ci.yml)).
 
 ---
 
@@ -168,6 +179,9 @@ MIT — see [LICENSE](LICENSE).
 
 ---
 
-## About OpenHearth
+## About
 
-OpenHearth is a nonprofit nonprofit dedicated to strengthening families through research, education, and free public tools. Learn more at [organization website].
+Lullaby is part of **OpenHearth** — a family of free, local-first, open-source
+tools for households. The shared ethos: your data stays on your device, there
+are no ads or tracking, and no account is required to use the app. See the
+[Vision](VISION.md) for what that means here.
