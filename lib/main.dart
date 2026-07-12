@@ -17,9 +17,16 @@ void main() {
       overrides: [
         // Encrypted-backup wiring (sanctuary_backup_ui). Lullaby keeps the
         // legacy ghost-backup/v1 AEAD context and the legacy (appDomain=null)
-        // key derivation so any already-shipped backup still decrypts
-        // (SANCTUARY-BRIEF §2.1, §2.3). sanctuaryAppDomainProvider is left at
-        // its null default — do NOT set a domain here.
+        // key derivation (SANCTUARY-BRIEF §2.1, §2.3) so the OHBK WIRE FORMAT
+        // stays byte-for-byte the one shipped Lullaby wrote. This does NOT
+        // mean a pre-rewire (CI-stub-era) exported .ohbk file still decrypts:
+        // the stub's KDF (PBKDF2-SHA256/1000) differs from this core's
+        // (PBKDF2-SHA512/2048 -> HKDF), so a stub-era backup cannot be
+        // restored under the real core. See
+        // test/unit/features/sanctuary_backup/stub_compat_gate_test.dart and
+        // docs/limitations.md "Known incompatibility: pre-rewire backups".
+        // sanctuaryAppDomainProvider is left at its null default — do NOT
+        // set a domain here.
         sanctuaryBackupConfigProvider.overrideWithValue(
           SanctuaryBackupConfig(
             appId: 'lullaby',

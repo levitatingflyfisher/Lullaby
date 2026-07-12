@@ -27,14 +27,36 @@ unrecoverable.** If the phone is lost with no backup, the data is gone. This is
 the deliberate cost of holding your own keys ([ADR-0001](adr/0001-local-first-no-account.md),
 [ADR-0004](adr/0004-encrypted-backup-seed-phrase.md)).
 
-## The production crypto is not in this repo
+## Known incompatibility: pre-rewire (stub-era) backups
 
-The encrypted-backup module (`sanctuary_auth_core`) is a private, out-of-repo
-package. This repository ships only a **CI stub** (`ci/auth_stub/`) that
-reproduces the public API and the OHBK wire format so the app compiles and the
-tests run. **The stub is not the audited library and must not be shipped in a
-release build.** Its key-derivation parameters and in-memory keystore are
-placeholders, not the security spec.
+Lullaby's encrypted-backup feature originally ran on an in-repo CI stub for
+its crypto, before this codebase was re-wired onto the real, audited
+`sanctuary_auth_core` package. If you ever exported an `.ohbk` file from a
+build that predates the re-wire, **that file cannot be restored** by the
+current app. The stub's key derivation (PBKDF2-HMAC-SHA256/1000 iterations)
+is a different algorithm from the real core's (PBKDF2-HMAC-SHA512/2048 →
+HKDF), so the same recovery phrase now derives a different key — the OHBK
+wire format itself didn't change, but the key needed to open the ciphertext
+isn't recoverable from the phrase alone.
+
+In practice this affects nobody: the stub-era build kept its keystore
+in-memory only, so a seed phrase never survived an app restart, meaning there
+was no persistent stub-era identity or backup corpus to begin with — any such
+export was already unrestorable under the stub itself by the time the app was
+closed. Restoring on the real core is the first release where a backup you
+make today will still work tomorrow. See
+`test/unit/features/sanctuary_backup/stub_compat_gate_test.dart` for the
+specific proof (wire format compatible, key derivation is not).
+
+## The production crypto is now vendored via sibling packages
+
+The encrypted-backup module (`sanctuary_auth_core`) and its Flutter UI layer
+(`sanctuary_backup_ui`) are consumed as path dependencies on sibling
+repositories (`../packages/sanctuary_auth_core`,
+`../packages/sanctuary_backup_ui`), not a private out-of-repo package and not
+an in-repo stub. The in-repo CI stub (`ci/auth_stub/`) that this app
+previously shipped in production has been removed; CI now clones the real
+sibling packages instead.
 
 ## The local database file is not itself encrypted
 

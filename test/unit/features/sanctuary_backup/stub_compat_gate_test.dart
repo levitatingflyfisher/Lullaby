@@ -5,13 +5,14 @@ import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sanctuary_auth_core/sanctuary_auth_core.dart';
 
-/// COMPAT GATE — SANCTUARY-BRIEF §4.W1 step 1, §2.1.
+/// KNOWN INCOMPATIBILITY — SANCTUARY-BRIEF §4.W1 step 1, §2.1.
 ///
-/// Before this repo was re-wired, shipped Lullaby depended on the CI stub
-/// (`ci/auth_stub`) for its crypto. This gate freezes an OHBK backup blob that
-/// the STUB minted from a FIXED phrase + FIXED plaintext, then asserts exactly
-/// what the REAL `sanctuary_auth_core` core does with it — so the user-migration
-/// story is a tested fact, not a guess.
+/// This file does NOT prove a passing compatibility gate. Before this repo
+/// was re-wired, shipped Lullaby depended on the CI stub (`ci/auth_stub`) for
+/// its crypto. This file freezes an OHBK backup blob that the STUB minted
+/// from a FIXED phrase + FIXED plaintext, then asserts exactly what the REAL
+/// `sanctuary_auth_core` core does with it — so the (in)compatibility story
+/// is a tested fact, not a guess or an aspiration.
 ///
 /// VERDICT (proven by the two live tests below):
 ///   • WIRE FORMAT is compatible — the real core's [GhostBackup.import] reads a
@@ -21,13 +22,20 @@ import 'package:sanctuary_auth_core/sanctuary_auth_core.dart';
 ///     master key under the real core (stub: PBKDF2-HMAC-SHA256/1000/
 ///     'sanctuary-auth-core/ghost/v1' → key directly; real: PBKDF2-HMAC-SHA512/
 ///     2048/'mnemonic' → HKDF-SHA256/'openhearth.encryption.v1'). So a stub-era
-///     backup cannot be opened by phrase alone.
+///     backup CANNOT be opened by phrase alone under the real core: an .ohbk
+///     file exported by a pre-rewire build is not restorable by this app. See
+///     docs/limitations.md "Known incompatibility: pre-rewire (stub-era)
+///     backups" for the user-facing statement of this fact.
 ///
-/// Why this does not strand users: shipped Lullaby ran the stub with its default
-/// IN-MEMORY key store (no persistent override in main.dart), so a seed phrase
-/// never survived an app restart — there is no persistent stub-era identity or
-/// backup corpus to migrate. The stub's phrases were not valid BIP39 either. The
-/// re-wire onto the real core is the first time Lullaby has persistent identity.
+/// Why this does not strand any real user: shipped Lullaby ran the stub with
+/// its default IN-MEMORY key store (no persistent override in main.dart), so
+/// a seed phrase never survived an app restart — there is no persistent
+/// stub-era identity or backup corpus to migrate. The stub's phrases were not
+/// valid BIP39 either. The re-wire onto the real core is the first time
+/// Lullaby has persistent identity, and the first release where a backup you
+/// make today is guaranteed to still work tomorrow. This is a
+/// non-regression, not new breakage: any stub-era export was already
+/// unrestorable under the stub itself.
 void main() {
   // Fixture minted by ci/auth_stub (see the deleted generator in git history):
   // key = stub.DefaultCryptoService.deriveKeysFromPhrase(phrase);
