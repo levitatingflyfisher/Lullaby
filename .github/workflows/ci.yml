@@ -41,7 +41,7 @@ jobs:
         with:
           # Must bundle Dart >= 3.10.7 to satisfy pubspec's `environment: sdk`.
           # 3.29.x shipped Dart 3.7.2 and failed version resolution.
-          flutter-version: '3.44.2'
+          flutter-version: '3.38.7'
           channel: stable
           cache: true
 
