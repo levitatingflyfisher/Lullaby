@@ -2,6 +2,14 @@
 
 - **Status:** Accepted
 - **Date:** 2026-07-03 (documenting a decision load-bearing since v1.0.0)
+- **Update (2026-07-12):** the in-repo CI stub (`ci/auth_stub/`) described
+  below has been removed. The app now consumes the real `sanctuary_auth_core`
+  and `sanctuary_backup_ui` packages as sibling-repo path dependencies in
+  every build, not just release builds — see
+  [docs/privacy-model.md](../privacy-model.md) and
+  [docs/limitations.md](../limitations.md#known-incompatibility-pre-rewire-stub-era-backups)
+  for current behavior. The decision record below is left as originally
+  written.
 
 ## Context
 

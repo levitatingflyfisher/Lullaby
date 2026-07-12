@@ -21,10 +21,12 @@ cd Lullaby
 flutter pub get
 ```
 
-`flutter pub get` resolves everything, including the `sanctuary_auth_core`
-backup-crypto dependency — its path points at the **in-repo CI stub**
-(`ci/auth_stub/`), so a fresh checkout builds without any private package. For a
-real release you replace that path dependency with the audited package (see
+`flutter pub get` resolves everything, including the `sanctuary_auth_core` and
+`sanctuary_backup_ui` backup-crypto dependencies — their paths point at
+sibling checkouts (`../packages/sanctuary_auth_core`,
+`../packages/sanctuary_backup_ui`), which CI clones from their own public
+repos alongside this one. A fresh local checkout needs those siblings cloned
+next to `Lullaby/` at the same directory level (see
 [../reference/backup-format.md](../reference/backup-format.md)).
 
 ## Generate database code (only after changing the schema)

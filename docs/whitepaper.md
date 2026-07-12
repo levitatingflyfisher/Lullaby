@@ -115,9 +115,11 @@ formula-injection safety; on-device Drift/SQLite with enforced foreign keys and
 migrations; the encrypted-backup app flow and OHBK wire format. It runs with no
 account and no network.
 
-**Aspirational / partial — documents, not fully shipped:** the **audited backup
-crypto is out-of-repo** and this repo ships a CI stub not meant for release; a
-**"named"/synced tier** exists in the enum but is unimplemented (only the
+**Aspirational / partial — documents, not fully shipped:** the audited backup
+crypto (`sanctuary_auth_core`) is consumed as a sibling-repo path dependency
+rather than published on pub.dev, so building from a fresh checkout still
+requires cloning the sibling packages; a **"named"/synced tier** exists in
+the enum but is unimplemented (only the
 account-free ghost tier runs); **multi-device sync** with real merge semantics is
 unbuilt (the hard, honest open problem — see [VISION.md](../VISION.md) Horizons);
 the app is **not yet published** (`applicationId` is still `com.example.lullaby`);

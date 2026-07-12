@@ -43,13 +43,17 @@ Two notes:
 
 ## The backup crypto trust boundary
 
-The encryption itself lives in a **separate, out-of-repo, audited package**
-(`sanctuary_auth_core`). This repository contains only a **CI stub**
-(`ci/auth_stub/`) that reproduces the public API and the OHBK wire format so the
-app builds and tests run. The stub's KDF parameters and its in-memory keystore are
-**not** the production security spec, and **the stub must never ship in a
-release**. When evaluating the real security posture, evaluate the audited
-package, not the stub. See [ADR-0004](adr/0004-encrypted-backup-seed-phrase.md).
+The encryption itself lives in `sanctuary_auth_core`, consumed as a path
+dependency on a sibling repository (`../packages/sanctuary_auth_core`), plus
+its Flutter UI layer `sanctuary_backup_ui` (`../packages/sanctuary_backup_ui`).
+CI clones both sibling packages so a fresh checkout builds and tests without
+any credentials. Lullaby previously vendored an in-repo **CI stub**
+(`ci/auth_stub/`) with placeholder KDF parameters and an in-memory keystore;
+that stub has been removed — the app now runs the real, audited crypto in
+every build, not just release builds. See a pre-rewire `.ohbk` export's
+non-recoverability under the real KDF in
+[limitations.md](limitations.md#known-incompatibility-pre-rewire-stub-era-backups)
+and [ADR-0004](adr/0004-encrypted-backup-seed-phrase.md).
 
 ## Threat model
 

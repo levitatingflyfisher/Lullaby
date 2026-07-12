@@ -39,7 +39,7 @@ HKDF), so the same recovery phrase now derives a different key — the OHBK
 wire format itself didn't change, but the key needed to open the ciphertext
 isn't recoverable from the phrase alone.
 
-In practice this affects nobody: the stub-era build kept its keystore
+In practice we have no known affected user: the stub-era build kept its keystore
 in-memory only, so a seed phrase never survived an app restart, meaning there
 was no persistent stub-era identity or backup corpus to begin with — any such
 export was already unrestorable under the stub itself by the time the app was

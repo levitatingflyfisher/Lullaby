@@ -135,11 +135,12 @@ flowchart LR
     blob -.parent saves & carries.-> restore[restore on any device]
 ```
 
-The crypto module is a **private, out-of-repo package**; this repo ships only a
-CI **stub** at `ci/auth_stub/`. The stub reproduces the public API and the OHBK
-wire format so the app builds and tests run, but its KDF parameters and in-memory
-keystore are not the production security spec. See
-[ADR-0004](../adr/0004-encrypted-backup-seed-phrase.md),
+The crypto module (`sanctuary_auth_core`, plus its Flutter UI layer
+`sanctuary_backup_ui`) is consumed as a path dependency on sibling
+repositories (`../packages/sanctuary_auth_core`,
+`../packages/sanctuary_backup_ui`), cloned by CI. The in-repo CI stub
+previously at `ci/auth_stub/` has been removed — every build now runs the
+real, audited crypto. See [ADR-0004](../adr/0004-encrypted-backup-seed-phrase.md),
 [docs/reference/backup-format.md](../reference/backup-format.md), and
 [docs/privacy-model.md](../privacy-model.md).
 
@@ -156,7 +157,7 @@ keystore are not the production security spec. See
 | **Dashboard / calendar / timeline** | `lib/features/dashboard/`, `lib/features/calendar/`, `lib/features/timeline/` |
 | **Doctor summary** | `lib/features/doctor/` |
 | **Export (CSV/PDF)** | `lib/features/export/` (`export_service.dart`, `_csvCell` safety fn) |
-| **Encrypted backup** | `lib/features/sanctuary_backup/`, contract stub `ci/auth_stub/` |
+| **Encrypted backup** | `lib/features/sanctuary_backup/`, real crypto sibling `../packages/sanctuary_auth_core/`, UI sibling `../packages/sanctuary_backup_ui/` |
 | **Baby profiles / switching** | `lib/features/babies/`, `lib/features/settings/` |
 | **Home-screen widget** | `lib/features/home_widget/`, `lib/services/home_widget_service.dart` |
 | **Database (schema/DAOs/migrations)** | `lib/services/database/` (`tables.dart`, `database.dart`, `daos/`, `connection/`) |

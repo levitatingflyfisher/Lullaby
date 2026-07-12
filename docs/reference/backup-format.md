@@ -4,11 +4,12 @@ Precise specification of the `.ohbk` encrypted-backup blob: its byte layout, the
 plaintext payload it protects, the decode/fail-safe rules, and the crypto trust
 boundary. Rationale: [ADR-0004](../adr/0004-encrypted-backup-seed-phrase.md).
 
-> This describes *intent and current behavior*. The production crypto is an
-> out-of-repo, audited package; the byte layout below is the contract this repo's
-> CI stub (`ci/auth_stub/`) reproduces so the app builds and is tested. **The
-> stub is not the audited library** — evaluate the real package for the real
-> security posture, and never ship the stub.
+> This describes *intent and current behavior*. The production crypto
+> (`sanctuary_auth_core`) is consumed as a path dependency on a sibling
+> repository (`../packages/sanctuary_auth_core`), cloned by CI; the byte
+> layout below is that real package's wire format, not a stand-in. The
+> in-repo CI stub (`ci/auth_stub/`) this app previously shipped has been
+> removed.
 
 ## Wire format
 
@@ -35,14 +36,17 @@ blob reveals only "this is an OHBK v1 ChaCha20-Poly1305 file."
 - **AEAD:** ChaCha20-Poly1305. Encryption produces `(nonce, ciphertext, MAC)`; the
   MAC authenticates the ciphertext so tampering (or a wrong key) fails on decrypt.
 - **Key derivation:** the 256-bit key is derived from the parent's **12-word
-  recovery seed phrase** by the audited `sanctuary_auth_core` package (a
-  password-based KDF over the normalized phrase). The exact KDF parameters are the
-  audited library's spec — **do not treat the CI stub's parameters as
-  authoritative.** The phrase is normalized (trim, lowercase, collapse
-  whitespace) before derivation so re-entry is forgiving of spacing/case.
-- **Keystore:** in production the seed phrase / key material is held in the OS
-  keychain by the audited package. (The CI stub uses an in-memory store — test
-  scaffolding only.)
+  recovery seed phrase** by `sanctuary_auth_core` (PBKDF2-HMAC-SHA512/2048
+  over the BIP39-normalized phrase, then HKDF-SHA256; Lullaby keeps
+  `appDomain=null`, the legacy household-wide derivation). This KDF differs
+  from the retired CI stub's (PBKDF2-HMAC-SHA256/1000, key used directly) —
+  see
+  [limitations.md](../limitations.md#known-incompatibility-pre-rewire-stub-era-backups)
+  for why a pre-rewire export can't be restored under it. The phrase is
+  normalized (trim, lowercase, collapse whitespace) before derivation so
+  re-entry is forgiving of spacing/case.
+- **Keystore:** the seed phrase / key material is held in the OS keychain by
+  `sanctuary_auth_core`.
 
 ## Plaintext payload (before encryption)
 
