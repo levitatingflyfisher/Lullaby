@@ -22,7 +22,8 @@ class _FakeCrypto implements CryptoService {
       'test test test test test test test test test test test junk';
 
   @override
-  Future<DerivedKeys> deriveKeysFromPhrase(String phrase) async {
+  Future<DerivedKeys> deriveKeysFromPhrase(String phrase,
+      {String? appDomain}) async {
     final err = throwOnDerive;
     if (err != null) throw err;
     return DerivedKeys(
