@@ -5,6 +5,7 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lullaby/features/sanctuary_backup/data/backup_serializer.dart';
 import 'package:lullaby/services/database/database.dart';
+import 'package:sanctuary_backup_ui/sanctuary_backup_ui.dart';
 
 import '../../../test_setup.dart';
 
@@ -12,13 +13,13 @@ void main() {
   ensureSqlite3();
 
   late AppDatabase db;
-  late BackupSerializer serializer;
+  late LullabyBackupSerializer serializer;
 
   final now = DateTime(2026, 4, 10);
 
   setUp(() {
     db = AppDatabase.forTesting(NativeDatabase.memory());
-    serializer = BackupSerializer(db);
+    serializer = LullabyBackupSerializer(db);
   });
 
   tearDown(() => db.close());
@@ -180,7 +181,7 @@ void main() {
 
       // Create a dump with different data
       final db2 = AppDatabase.forTesting(NativeDatabase.memory());
-      final serializer2 = BackupSerializer(db2);
+      final serializer2 = LullabyBackupSerializer(db2);
       await db2.into(db2.babies).insert(BabiesCompanion.insert(
             id: 'b2',
             name: 'Bob',

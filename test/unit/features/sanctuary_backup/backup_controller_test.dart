@@ -1,120 +1,107 @@
 import 'dart:typed_data';
 
+import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lullaby/core/providers/auth_providers.dart';
 import 'package:lullaby/features/sanctuary_backup/data/backup_serializer.dart';
-import 'package:lullaby/features/sanctuary_backup/domain/backup_repository.dart';
-import 'package:lullaby/features/sanctuary_backup/presentation/controllers/backup_controller.dart';
 import 'package:lullaby/services/database/database.dart';
+import 'package:sanctuary_auth_core/sanctuary_auth_core.dart';
+import 'package:sanctuary_backup_ui/sanctuary_backup_ui.dart';
+import 'package:sanctuary_backup_ui/testing.dart';
 
 import '../../../test_setup.dart';
 
-/// CryptoService that yields a fixed key, or throws on derive to simulate an
-/// invalid recovery phrase.
-class _FakeCrypto implements CryptoService {
-  _FakeCrypto({this.throwOnDerive});
-  final Object? throwOnDerive;
-
-  @override
-  String generateMnemonic() =>
-      'test test test test test test test test test test test junk';
-
-  @override
-  Future<DerivedKeys> deriveKeysFromPhrase(String phrase,
-      {String? appDomain}) async {
-    final err = throwOnDerive;
-    if (err != null) throw err;
-    return DerivedKeys(
-      masterEncryptionKey: Uint8List(32),
-      syncKey: Uint8List(32),
-      authKey: Uint8List(32),
-      recoveryKey: Uint8List(32),
-      syncChannelId: Uint8List(32),
-    );
-  }
-}
-
-/// BackupRepository whose restore() always throws [error]. The super
-/// serializer/cipher are never exercised because restore is overridden.
-class _ThrowingBackupRepo extends BackupRepository {
-  _ThrowingBackupRepo(super.serializer, super.cipher, this.error);
-  final Object error;
-
-  @override
-  Future<void> restore(Uint8List blob, Uint8List key) async => throw error;
-}
+/// End-to-end net for the re-wire: Lullaby's real serializer + real crypto,
+/// driven through the package's BackupController with Lullaby's actual config
+/// (appId 'lullaby', legacy ghost-backup/v1 context). The generic controller
+/// behaviour (RestoreOutcome mapping, seed flows) is unit-tested in the package;
+/// this proves Lullaby's wiring works against the real sanctuary_auth_core.
+const _validPhrase =
+    'abandon abandon abandon abandon abandon abandon abandon abandon '
+    'abandon abandon abandon about';
 
 void main() {
   ensureSqlite3();
 
   late AppDatabase db;
+  final now = DateTime(2026, 4, 10);
 
-  setUp(() {
-    db = AppDatabase.forTesting(NativeDatabase.memory());
-  });
+  setUp(() => db = AppDatabase.forTesting(NativeDatabase.memory()));
   tearDown(() => db.close());
 
-  // A container whose restore() throws [restoreError]; the phrase derivation
-  // succeeds unless [deriveError] is supplied.
-  ProviderContainer makeContainer({Object? restoreError, Object? deriveError}) {
-    final repo = _ThrowingBackupRepo(
-        BackupSerializer(db), EnvelopeCipher(), restoreError ?? Exception('x'));
-    return ProviderContainer(overrides: [
-      cryptoServiceProvider
-          .overrideWithValue(_FakeCrypto(throwOnDerive: deriveError)),
-      backupRepositoryProvider.overrideWithValue(repo),
+  ProviderContainer makeContainer({
+    required AppDatabase database,
+    required SecureKeyStore store,
+    void Function(Ref ref)? onAfterRestore,
+  }) {
+    final c = ProviderContainer(overrides: [
+      secureKeyStoreProvider.overrideWithValue(store),
+      cryptoServiceProvider.overrideWithValue(const DefaultCryptoService()),
+      backupSerializerProvider
+          .overrideWith((ref) => LullabyBackupSerializer(database)),
+      sanctuaryBackupConfigProvider.overrideWithValue(
+        SanctuaryBackupConfig(
+          appId: 'lullaby',
+          aadContext: 'ghost-backup/v1',
+          appDisplayName: 'Lullaby',
+          onAfterRestore: onAfterRestore,
+        ),
+      ),
+      // sanctuaryAppDomainProvider stays at its null default (legacy keys).
     ]);
+    addTearDown(c.dispose);
+    return c;
   }
 
-  final blob = Uint8List.fromList([1, 2, 3]);
+  test('export → restore round-trips Lullaby data through the controller',
+      () async {
+    await db.into(db.babies).insert(BabiesCompanion.insert(
+          id: 'b1',
+          name: 'Alice',
+          dateOfBirth: DateTime(2025, 6, 1),
+          createdAt: now,
+          modifiedAt: now,
+        ));
 
-  Future<RestoreOutcome> restore(ProviderContainer c) =>
-      c.read(backupControllerProvider.notifier).restoreWithPhrase(blob, 'words');
+    final src = makeContainer(
+      database: db,
+      store: InMemorySecureKeyStore(
+          mnemonic: _validPhrase, acknowledged: true),
+    );
+    final result =
+        await src.read(backupControllerProvider.notifier).exportBackup();
+    expect(result, isNotNull);
+    expect(result!.filename,
+        matches(RegExp(r'^lullaby-backup-\d{4}-\d{2}-\d{2}\.ohbk$')));
+    expect(result.bytes.sublist(0, 4), equals([0x4F, 0x48, 0x42, 0x4B]));
 
-  group('BackupController.restoreWithPhrase error mapping', () {
-    test('an invalid phrase (derive throws) maps to wrongPhrase, not a throw',
-        () async {
-      // Regression guard: deriveKeysFromPhrase must run inside the guarded
-      // path, so a bad mnemonic surfaces as a legible outcome rather than an
-      // unhandled exception (no snackbar).
-      final container =
-          makeContainer(deriveError: CryptoException('bad mnemonic'));
-      addTearDown(container.dispose);
+    // Restore into a fresh DB with a fresh (empty) keychain, by phrase.
+    final db2 = AppDatabase.forTesting(NativeDatabase.memory());
+    addTearDown(db2.close);
+    var refreshed = false;
+    final dst = makeContainer(
+      database: db2,
+      store: InMemorySecureKeyStore(),
+      onAfterRestore: (_) => refreshed = true,
+    );
+    final outcome = await dst
+        .read(backupControllerProvider.notifier)
+        .restoreWithPhrase(result.bytes, _validPhrase);
 
-      expect(await restore(container), RestoreOutcome.wrongPhrase);
-    });
+    expect(outcome, RestoreOutcome.success);
+    expect(refreshed, isTrue, reason: 'onAfterRestore must fire');
 
-    test('a wrong key / tampered blob maps to wrongPhrase', () async {
-      final container =
-          makeContainer(restoreError: CryptoException('wrong key'));
-      addTearDown(container.dispose);
+    final babies = await db2.select(db2.babies).get();
+    expect(babies, hasLength(1));
+    expect(babies.first.name, equals('Alice'));
+  });
 
-      expect(await restore(container), RestoreOutcome.wrongPhrase);
-    });
-
-    test('a malformed blob maps to corruptFile', () async {
-      final container =
-          makeContainer(restoreError: BackupFormatException('bad magic'));
-      addTearDown(container.dispose);
-
-      expect(await restore(container), RestoreOutcome.corruptFile);
-    });
-
-    test('a future schema version maps to tooNewBackup', () async {
-      final container =
-          makeContainer(restoreError: const BackupSchemaException(99, 1));
-      addTearDown(container.dispose);
-
-      expect(await restore(container), RestoreOutcome.tooNewBackup);
-    });
-
-    test('an unexpected error maps to failed', () async {
-      final container = makeContainer(restoreError: StateError('boom'));
-      addTearDown(container.dispose);
-
-      expect(await restore(container), RestoreOutcome.failed);
-    });
+  test('a non-OHBK blob restores as corruptFile', () async {
+    final c = makeContainer(database: db, store: InMemorySecureKeyStore());
+    final outcome = await c
+        .read(backupControllerProvider.notifier)
+        .restoreWithPhrase(Uint8List.fromList(List.filled(64, 0)), _validPhrase);
+    expect(outcome, RestoreOutcome.corruptFile);
   });
 }

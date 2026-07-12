@@ -1,20 +1,24 @@
 import 'dart:convert';
 
 import 'package:drift/drift.dart';
+import 'package:sanctuary_backup_ui/sanctuary_backup_ui.dart';
 
 import '../../../services/database/database.dart';
 
 /// Serializes all Lullaby user data to/from a JSON [Uint8List] for encrypted
-/// backup via sanctuary_auth_core.
+/// backup via sanctuary_backup_ui.
 ///
 /// Works directly with [AppDatabase] to get full-table dumps — not filtered by
-/// baby like the DAOs.
-class BackupSerializer {
+/// baby like the DAOs. Implements the package's [BackupSerializer] interface;
+/// the JSON envelope and table logic are unchanged from Lullaby's shipped
+/// format (SANCTUARY-BRIEF §4.W1: keep envelope/table logic identical).
+class LullabyBackupSerializer implements BackupSerializer {
   final AppDatabase _db;
 
-  const BackupSerializer(this._db);
+  const LullabyBackupSerializer(this._db);
 
   /// Reads every user-data table and returns the JSON payload as bytes.
+  @override
   Future<Uint8List> dumpAll() async {
     final allBabies = await _db.select(_db.babies).get();
     final allFeedings = await _db.select(_db.feedingLogs).get();
@@ -50,6 +54,7 @@ class BackupSerializer {
   /// than the current database version.
   /// Throws [FormatException] if the payload is not valid JSON or is missing
   /// required fields.
+  @override
   Future<void> restoreAll(Uint8List data) async {
     final json = jsonDecode(utf8.decode(data)) as Map<String, dynamic>;
 
@@ -216,17 +221,4 @@ class BackupSerializer {
     if (value == null) return null;
     return _dateTime(value);
   }
-}
-
-/// Thrown when a backup's schema version is newer than the current database.
-class BackupSchemaException implements Exception {
-  final int backupVersion;
-  final int currentVersion;
-
-  const BackupSchemaException(this.backupVersion, this.currentVersion);
-
-  @override
-  String toString() =>
-      'BackupSchemaException: backup schema v$backupVersion is newer than '
-      'current v$currentVersion. Update the app before restoring this backup.';
 }

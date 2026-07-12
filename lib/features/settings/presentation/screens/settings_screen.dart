@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../sanctuary_backup/presentation/widgets/backup_settings_section.dart';
+import 'package:sanctuary_backup_ui/sanctuary_backup_ui.dart';
+
 import '../controllers/theme_controller.dart';
 
 class SettingsScreen extends ConsumerWidget {
