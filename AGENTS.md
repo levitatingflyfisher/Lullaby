@@ -62,7 +62,7 @@ The short version, by concern:
 | **Health** (medicine / vaccine) | `lib/features/health/medicine/`, `lib/features/health/vaccine/` |
 | **Aggregation / stats** | `lib/features/stats/domain/services/stats_aggregator.dart`, `lib/features/stats/` |
 | **Export (CSV / PDF)** | `lib/features/export/export_service.dart` (`_csvCell` is the safety fn) |
-| **Encrypted backup** | `lib/features/sanctuary_backup/`; the crypto contract stub is `ci/auth_stub/lib/sanctuary_auth_core.dart` |
+| **Encrypted backup** | `lib/features/sanctuary_backup/`; real crypto sibling `../packages/sanctuary_auth_core/`, UI sibling `../packages/sanctuary_backup_ui/` |
 | **State wiring / providers** | `lib/core/providers/` (`database_provider.dart`, `repository_providers.dart`, `auth_providers.dart`) |
 | **Navigation / theme / shell** | `lib/app/router.dart`, `lib/app/theme/`, `lib/app/shell_screen.dart` |
 | **Native vs. web DB connection** | `lib/services/database/connection/` (`native.dart`, `web.dart`, conditional `connection.dart`) |
@@ -73,7 +73,7 @@ for the tutorials / how-to / reference / explanation split.
 ## How to work here
 
 ```bash
-flutter pub get            # resolve deps (the backup-crypto stub is in-repo at ci/auth_stub)
+flutter pub get            # resolve deps (backup-crypto siblings must be cloned at ../packages/ — see README)
 flutter analyze            # static analysis — must be clean (config: analysis_options.yaml)
 flutter test               # the suite — must be green before you commit
 dart run build_runner build --delete-conflicting-outputs   # regenerate Drift code after editing tables.dart
@@ -85,11 +85,15 @@ dart run build_runner build --delete-conflicting-outputs   # regenerate Drift co
 - **Drift codegen**: after any change to `tables.dart` or a DAO's queries,
   regenerate the `*.g.dart` files with `build_runner`. Never hand-edit generated
   code.
-- **The backup crypto is out-of-repo.** `pubspec.yaml`'s `sanctuary_auth_core`
-  path dependency points at the in-repo **CI stub** (`ci/auth_stub`) so the app
-  compiles and tests run. The stub reproduces the public API and the OHBK wire
-  format but is **not** the audited library; a real release swaps in the private
-  package. See [docs/reference/backup-format.md](docs/reference/backup-format.md).
+- **The backup crypto is a sibling package, not in-repo.** `pubspec.yaml`'s
+  `sanctuary_auth_core`/`sanctuary_backup_ui` path dependencies point at
+  `../packages/sanctuary_auth_core`/`../packages/sanctuary_backup_ui` —
+  sibling checkouts, not a stub. Clone them next to `Lullaby/` before running
+  `flutter pub get` (see README's sibling-clone commands). A pre-rewire
+  (CI-stub-era) exported `.ohbk` file is a known, documented incompatibility
+  with the real KDF — see
+  [docs/limitations.md](docs/limitations.md#known-incompatibility-pre-rewire-stub-era-backups).
+  See also [docs/reference/backup-format.md](docs/reference/backup-format.md).
 - **Adding a feature**: mirror the existing shape — a folder under `lib/features/`
   with `domain/` (entity + abstract repo), `data/` (Drift-backed impl), and
   `presentation/` (screen + Riverpod controller). Register the repo provider in

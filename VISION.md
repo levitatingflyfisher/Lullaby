@@ -86,17 +86,21 @@ As of v1.0.0:
 - The dashboard, calendar, timeline, statistics charts, and doctor summary.
 - **PDF and CSV export**, with the CSV formula-injection neutralization tested.
 - **Encrypted backup/restore** to an `.ohbk` file: the app-side serialization,
-  the OHBK wire format, and the destructive-restore transaction are real and
-  tested. (See the caveat below on where the crypto lives.)
+  the OHBK wire format, the real audited crypto (`sanctuary_auth_core`), and
+  the destructive-restore transaction are all real and tested — reachable
+  from Settings in every build, not gated to release. (See the caveat below on
+  where the crypto dependency lives, and the known pre-rewire-backup
+  incompatibility in [docs/limitations.md](docs/limitations.md#known-incompatibility-pre-rewire-stub-era-backups).)
 - CI runs `flutter analyze` and `flutter test` on every push and PR (Linux).
 
 **Aspirational / partial — documented, not fully shipped:**
-- **The audited crypto is out-of-repo.** The encrypted-backup module
-  (`sanctuary_auth_core`) is a private package consumed as a path dependency;
-  this repo vendors only a **CI stub** that reproduces the public API and the
-  OHBK wire format so the app compiles and tests run. The stub's key-derivation
-  parameters and in-memory keystore are **not** the production security spec.
-  See [docs/reference/backup-format.md](docs/reference/backup-format.md) and
+- **The audited crypto lives in sibling repos, not on pub.dev.** The
+  encrypted-backup module (`sanctuary_auth_core`) and its UI layer
+  (`sanctuary_backup_ui`) are consumed as path dependencies on sibling
+  checkouts (`../packages/...`), cloned by CI and, for a local build, by hand
+  (see README). This is a distribution/build-setup gap, not a feature gap —
+  the crypto itself is real, not a stub. See
+  [docs/reference/backup-format.md](docs/reference/backup-format.md) and
   [docs/privacy-model.md](docs/privacy-model.md).
 - **A "named"/synced account tier** exists in the auth enum (`AuthTier.named`)
   but the app only ever runs the account-free **ghost** tier. Multi-device sync
@@ -107,18 +111,18 @@ As of v1.0.0:
 - CI verifies analyze + test on **Linux only** — iOS, Linux desktop, and web are
   supported targets but are not exercised by CI.
 
-The tracker is real and the data really does stay on the device. Anything with
-*production crypto*, *a second device*, or *an app-store listing* attached is
-still partial. Keep that line bright.
+The tracker is real, the backup crypto is real, and the data really does stay
+on the device. Anything with *a second device* or *an app-store listing*
+attached is still partial. Keep that line bright.
 
 ## Horizons (problems, not a feature list)
 
 Framed as problems on purpose — a dated feature list self-destructs.
 
-- **Near** — Wire the real, audited backup crypto into release builds and
-  document the trust boundary end-to-end. Fill in the README screenshots. A
-  guided first-run so a sleep-deprived parent logs their first feed in under a
-  minute.
+- **Near** — Publish `sanctuary_auth_core`/`sanctuary_backup_ui` so the path
+  dependency can become a normal pub.dev one (no sibling-clone step). Fill in
+  the README screenshots. A guided first-run so a sleep-deprived parent logs
+  their first feed in under a minute.
 - **Mid** — The hardest honest problem: **how do two parents share one baby's
   record without a server?** Today the answer is "one device, or carry an
   encrypted backup between them." A real answer — encrypted-blob sync through a
