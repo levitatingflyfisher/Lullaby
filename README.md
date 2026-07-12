@@ -72,9 +72,22 @@ this repo? Start with [AGENTS.md](AGENTS.md).
 
 ### Setup
 
+Lullaby's encrypted backup is built on two shared packages consumed by
+**sibling path dependency** (`../packages/...`). Clone them next to Lullaby so
+the paths resolve:
+
+```
+packages/
+  sanctuary_auth_core/     # github: levitatingflyfisher/sanctuaryAuthCore
+  sanctuary_backup_ui/     # github: levitatingflyfisher/sanctuaryBackupUi
+Lullaby/                   # this repo
+```
+
 ```bash
-git clone <repo-url>
-cd lullaby
+git clone https://github.com/levitatingflyfisher/sanctuaryAuthCore packages/sanctuary_auth_core
+git clone https://github.com/levitatingflyfisher/sanctuaryBackupUi packages/sanctuary_backup_ui
+git clone <repo-url> Lullaby
+cd Lullaby
 flutter pub get
 ```
 
