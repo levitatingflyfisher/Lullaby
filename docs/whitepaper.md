@@ -112,13 +112,15 @@ A white paper that overclaims is marketing. Honestly, as of v1.0.0:
 diaper, growth with WHO curves, medicine, vaccine); dashboard, calendar,
 timeline, statistics, and doctor summary; PDF and CSV export with tested
 formula-injection safety; on-device Drift/SQLite with enforced foreign keys and
-migrations; the encrypted-backup app flow and OHBK wire format. It runs with no
-account and no network.
+migrations; the encrypted-backup app flow, the real audited crypto
+(`sanctuary_auth_core`), and the OHBK wire format. It runs with no account and
+no network.
 
 **Aspirational / partial — documents, not fully shipped:** the audited backup
-crypto (`sanctuary_auth_core`) is consumed as a sibling-repo path dependency
-rather than published on pub.dev, so building from a fresh checkout still
-requires cloning the sibling packages; a **"named"/synced tier** exists in
+crypto (`sanctuary_auth_core`) is a distribution/build-setup gap, not a
+feature gap — it is consumed as a sibling-repo path dependency rather than
+published on pub.dev, so building from a fresh checkout still requires
+cloning the sibling packages by hand; a **"named"/synced tier** exists in
 the enum but is unimplemented (only the
 account-free ghost tier runs); **multi-device sync** with real merge semantics is
 unbuilt (the hard, honest open problem — see [VISION.md](../VISION.md) Horizons);
