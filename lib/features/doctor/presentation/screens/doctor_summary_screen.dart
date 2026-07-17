@@ -176,6 +176,15 @@ class DoctorSummaryScreen extends ConsumerWidget {
                                 '${summary.latestGrowth!.headCircumferenceCm!.toStringAsFixed(1)} cm'
                                 '${summary.headPercentile != null ? ' (P${summary.headPercentile!.round()})' : ''}',
                           ),
+                        if (summary.growthOutsideWhoRange)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8),
+                            child: Text(
+                              'WHO percentiles cover 0–24 months; '
+                              'this measurement is outside that range.',
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          ),
                       ] else
                         const Padding(
                           padding: EdgeInsets.symmetric(vertical: 8),

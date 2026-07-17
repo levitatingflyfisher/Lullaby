@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lullaby/features/babies/domain/entities/baby.dart';
 import 'package:lullaby/features/doctor/presentation/controllers/doctor_controller.dart';
 import 'package:lullaby/features/doctor/presentation/screens/doctor_summary_screen.dart';
+import 'package:lullaby/features/growth/domain/entities/growth_record.dart';
 import 'package:lullaby/features/settings/presentation/controllers/active_baby_controller.dart';
 
 void main() {
@@ -126,6 +127,70 @@ void main() {
       await tester.pump();
 
       expect(find.byIcon(Icons.share), findsOneWidget);
+    });
+
+    testWidgets(
+        'shows calm out-of-tracked-range note instead of a percentile '
+        'when the measurement is beyond the WHO 0-24m tables', (tester) async {
+      // A 30-month-old's measurement: percentile is honestly unknowable.
+      final growth = GrowthRecordEntity(
+        id: 'g1',
+        babyId: fakeBaby.id,
+        measuredAt: DateTime(2027, 6, 1),
+        weightKg: 12.2,
+        createdAt: DateTime(2027, 6, 1),
+        modifiedAt: DateTime(2027, 6, 1),
+      );
+      final summary = DoctorSummary(
+        baby: fakeBaby,
+        dateRange: fakeSummary.dateRange,
+        avgFeedsPerDay: 8.5,
+        avgSleepHoursPerDay: 14.2,
+        avgDiapersPerDay: 6.3,
+        latestGrowth: growth,
+        growthOutsideWhoRange: true,
+      );
+      await tester.pumpWidget(buildSubject(baby: fakeBaby, summary: summary));
+      await tester.pump();
+      await tester.pump();
+
+      // The measurement itself still shows, without a fabricated (P##).
+      expect(find.text('12.2 kg'), findsOneWidget);
+      expect(find.textContaining('(P'), findsNothing);
+      expect(
+        find.text(
+          'WHO percentiles cover 0–24 months; '
+          'this measurement is outside that range.',
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('no out-of-range note for an in-range measurement',
+        (tester) async {
+      final growth = GrowthRecordEntity(
+        id: 'g1',
+        babyId: fakeBaby.id,
+        measuredAt: DateTime(2025, 6, 1),
+        weightKg: 7.0,
+        createdAt: DateTime(2025, 6, 1),
+        modifiedAt: DateTime(2025, 6, 1),
+      );
+      final summary = DoctorSummary(
+        baby: fakeBaby,
+        dateRange: fakeSummary.dateRange,
+        avgFeedsPerDay: 8.5,
+        avgSleepHoursPerDay: 14.2,
+        avgDiapersPerDay: 6.3,
+        latestGrowth: growth,
+        weightPercentile: 42.0,
+      );
+      await tester.pumpWidget(buildSubject(baby: fakeBaby, summary: summary));
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('7.0 kg (P42)'), findsOneWidget);
+      expect(find.textContaining('outside that range'), findsNothing);
     });
 
     testWidgets('share icon onPressed is null while dailies are loading',

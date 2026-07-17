@@ -31,6 +31,7 @@ class DoctorSummary {
     this.weightPercentile,
     this.heightPercentile,
     this.headPercentile,
+    this.growthOutsideWhoRange = false,
     this.recentMedicines = const [],
     this.administeredVaccines = const [],
   });
@@ -44,6 +45,11 @@ class DoctorSummary {
   final double? weightPercentile;
   final double? heightPercentile;
   final double? headPercentile;
+
+  /// True when the latest measurement was taken outside the 0–24 month window
+  /// the WHO tables cover — the percentiles above are null because no honest
+  /// figure exists, and the UI should say so rather than stay silent.
+  final bool growthOutsideWhoRange;
   final List<MedicineLogEntity> recentMedicines;
   final List<VaccineRecordEntity> administeredVaccines;
 }
@@ -90,6 +96,7 @@ final doctorSummaryProvider =
   double? weightPercentile;
   double? heightPercentile;
   double? headPercentile;
+  var growthOutsideWhoRange = false;
 
   final gender = baby.gender;
   if (latestGrowth != null && gender != null) {
@@ -98,20 +105,22 @@ final doctorSummaryProvider =
     // produces a wildly wrong figure. Only computed when the sex is known (M8).
     final ageMonths =
         latestGrowth.measuredAt.difference(baby.dateOfBirth).inDays / 30.44;
-    if (ageMonths >= 0 && ageMonths <= 24) {
-      const calculator = PercentileCalculator();
-      if (latestGrowth.weightKg != null) {
-        weightPercentile = calculator.getPercentile(
-            gender, ageMonths, latestGrowth.weightKg!, MeasurementType.weight);
-      }
-      if (latestGrowth.heightCm != null) {
-        heightPercentile = calculator.getPercentile(
-            gender, ageMonths, latestGrowth.heightCm!, MeasurementType.height);
-      }
-      if (latestGrowth.headCircumferenceCm != null) {
-        headPercentile = calculator.getPercentile(gender, ageMonths,
-            latestGrowth.headCircumferenceCm!, MeasurementType.headCircumference);
-      }
+    // The calculator itself returns null for ages outside its 0–24 month
+    // tables; this flag lets the UI say WHY the percentile is missing
+    // instead of silently omitting it.
+    growthOutsideWhoRange = !PercentileCalculator.ageWithinWhoRange(ageMonths);
+    const calculator = PercentileCalculator();
+    if (latestGrowth.weightKg != null) {
+      weightPercentile = calculator.getPercentile(
+          gender, ageMonths, latestGrowth.weightKg!, MeasurementType.weight);
+    }
+    if (latestGrowth.heightCm != null) {
+      heightPercentile = calculator.getPercentile(
+          gender, ageMonths, latestGrowth.heightCm!, MeasurementType.height);
+    }
+    if (latestGrowth.headCircumferenceCm != null) {
+      headPercentile = calculator.getPercentile(gender, ageMonths,
+          latestGrowth.headCircumferenceCm!, MeasurementType.headCircumference);
     }
   }
 
@@ -125,6 +134,7 @@ final doctorSummaryProvider =
     weightPercentile: weightPercentile,
     heightPercentile: heightPercentile,
     headPercentile: headPercentile,
+    growthOutsideWhoRange: growthOutsideWhoRange,
     recentMedicines: recentMedicines,
     administeredVaccines: administeredVaccines,
   );

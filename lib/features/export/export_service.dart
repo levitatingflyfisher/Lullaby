@@ -177,6 +177,14 @@ class ExportService {
                   ],
               ],
             ),
+            if (summary.growthOutsideWhoRange) ...[
+              pw.SizedBox(height: 4),
+              pw.Text(
+                'WHO percentiles cover 0-24 months; '
+                'this measurement is outside that range.',
+                style: const pw.TextStyle(fontSize: 9),
+              ),
+            ],
             pw.SizedBox(height: 12),
           ],
           if (summary.recentMedicines.isNotEmpty) ...[
