@@ -10,6 +10,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Depend on the shared `openhearth_design` package (path dep, v0.4.0) as
+  conformance readiness. A sweep of `lib/` found ZERO literals equal to
+  canonical OpenHearth token values, so no colors were rewired and nothing
+  visual changed; a readiness test pins the canonical token values and
+  proves Lullaby's signature periwinkle (`0xFF7B8FD4`) is app-local
+  identity, not a canonical token. Lullaby's type ladder and its
+  Material-You dynamic-color hook remain untouched by design.
 - Snapshot vault ("Previous backups"): every export and every restore now
   leaves a stamped on-device snapshot (keep-10, pinnable) you can restore,
   pin or delete from Settings.

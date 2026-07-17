@@ -28,6 +28,8 @@ dependencies:
   share_plus: ^10.0.0
   home_widget: ^0.7.0
   file_picker: ^8.0.0
+  openhearth_design:
+    path: ../ohStyle/openhearth_design
   sanctuary_auth_core:
     path: ../packages/sanctuary_auth_core
   sanctuary_backup_ui:
