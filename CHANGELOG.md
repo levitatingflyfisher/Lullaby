@@ -26,6 +26,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   device identity — previously the restored data was orphaned and a new
   export required minting a new identity that didn't match the user's
   written-down phrase.
+- Web (PWA): baby photos and data exports no longer crash. Five UI files
+  bare-imported `dart:io`, which compiles on web but throws at runtime —
+  avatars broke as soon as a baby had a photo set, and every export tap
+  crashed. Photos now resolve through a platform trio (initial-letter
+  avatar + honest "photos are available in the Android app" copy on web);
+  CSV/PDF exports share bytes via the Web Share API with a plain-download
+  fallback, so they genuinely work in every browser. A suite-level guard
+  now fails CI if a bare `dart:io` import ever reappears in shared code.
+- WHO growth percentiles are honest at the edges: a measurement outside
+  the 0–24-month tables now shows a calm "outside that range" note
+  (screen + PDF) instead of silently scoring against the 24-month curves;
+  a measurement matching no band (e.g. NaN) no longer reports a fabricated
+  50th percentile; degenerate equal-band interpolation can no longer
+  produce NaN. In-range math is regression-locked byte-identical.
 
 ---
 
