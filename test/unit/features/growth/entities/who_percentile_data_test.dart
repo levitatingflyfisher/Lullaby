@@ -99,4 +99,101 @@ void main() {
       expect(p, closeTo(50, 5));
     });
   });
+
+  group('PercentileCalculator.getPercentile honest edges', () {
+    // The WHO Child Growth Standards tables here cover 0–24 months. Outside
+    // that window there is no honest percentile to report: clamping a
+    // 30-month-old onto the 24-month curves silently fabricates a figure.
+    test('returns null for a 30-month-old (beyond the 0-24m tables)', () {
+      final p = calculator.getPercentile(
+          Gender.male, 30, 12.2, MeasurementType.weight);
+      expect(p, isNull);
+    });
+
+    test('returns null for a negative age', () {
+      final p = calculator.getPercentile(
+          Gender.female, -1, 3.2, MeasurementType.weight);
+      expect(p, isNull);
+    });
+
+    test('returns null for a NaN age (not an exception)', () {
+      final p = calculator.getPercentile(
+          Gender.male, double.nan, 8.0, MeasurementType.weight);
+      expect(p, isNull);
+    });
+
+    test('returns null (not a fabricated P50) for a NaN measurement', () {
+      // NaN compares false against every band, so the old code fell through
+      // every branch and silently reported the 50th percentile.
+      final p = calculator.getPercentile(
+          Gender.male, 12, double.nan, MeasurementType.weight);
+      expect(p, isNull);
+    });
+  });
+
+  group('PercentileCalculator.percentileFromBandPoints', () {
+    // Real WHO tables are strictly ascending, so adjacent bands never share a
+    // value — but the interpolation must not rely on that: with equal band
+    // values the old formula divided by zero and produced NaN.
+    test('guards the equal-band division (no NaN)', () {
+      final points = {3: 4.0, 15: 5.0, 50: 5.0, 85: 6.0, 97: 7.0};
+      final p = PercentileCalculator.percentileFromBandPoints(points, 5.0);
+      expect(p, isNotNull);
+      expect(p!.isNaN, isFalse);
+      expect(p, inInclusiveRange(15, 50));
+    });
+
+    test('returns null when the measurement lands in no band', () {
+      final points = {3: 4.0, 15: 5.0, 50: 5.5, 85: 6.0, 97: 7.0};
+      final p =
+          PercentileCalculator.percentileFromBandPoints(points, double.nan);
+      expect(p, isNull);
+    });
+
+    test('matches getPercentile for an ordinary interpolation', () {
+      final points = {3: 4.0, 15: 5.0, 50: 6.0, 85: 7.0, 97: 8.0};
+      final p = PercentileCalculator.percentileFromBandPoints(points, 5.5);
+      expect(p, equals(32.5)); // halfway between P15 and P50
+    });
+  });
+
+  group('PercentileCalculator.getPercentile golden regression', () {
+    // Exact values captured from the implementation BEFORE the honest-edges
+    // change (equals, not closeTo): in-range math must not move by a bit.
+    test('in-range results are byte-identical to the pre-change math', () {
+      final cases = <(Gender, double, double, MeasurementType, double)>[
+        (Gender.male, 0.0, 3.3, MeasurementType.weight, 50.0),
+        (Gender.male, 7.3, 8.5, MeasurementType.weight, 54.139784946236546),
+        (Gender.female, 6.0, 65.7, MeasurementType.height, 50.0),
+        (Gender.male, 23.5, 12.9, MeasurementType.weight, 68.66666666666669),
+        (Gender.female, 0.4, 3.0, MeasurementType.weight, 11.399999999999995),
+        (Gender.male, 24.0, 15.0, MeasurementType.weight, 94.75),
+        (
+          Gender.male,
+          12.25,
+          47.0,
+          MeasurementType.headCircumference,
+          80.00000000000006
+        ),
+        (
+          Gender.female,
+          18.7,
+          46.0,
+          MeasurementType.headCircumference,
+          50.714285714285744
+        ),
+        (Gender.female, 11.9, 73.0, MeasurementType.height, 38.634686346863504),
+        (Gender.male, 0.0, 2.5, MeasurementType.weight, 1.0), // <= P3 floor
+        (Gender.male, 24.0, 20.0, MeasurementType.weight, 99.0), // >= P97 cap
+        (Gender.female, 3.9, 6.1, MeasurementType.weight, 37.82608695652172),
+      ];
+      for (final (gender, age, measurement, type, expected) in cases) {
+        expect(
+          calculator.getPercentile(gender, age, measurement, type),
+          equals(expected),
+          reason: '$gender $type age=$age measurement=$measurement',
+        );
+      }
+    });
+  });
 }
