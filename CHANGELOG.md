@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Unreleased]
+
+### Added
+- Snapshot vault ("Previous backups"): every export and every restore now
+  leaves a stamped on-device snapshot (keep-10, pinnable) you can restore,
+  pin or delete from Settings.
+- Mandatory pre-restore snapshot: a restore refuses to run unless the
+  current data was snapshotted first — restoring is now reversible.
+- Preview before restore: the confirm dialog shows the backup's age and
+  per-table row counts next to what's on the device now.
+- Every export verifies itself by read-back before reporting success.
+- Plain-JSON export (unencrypted, honestly labeled) from Settings.
+- Silent freshness snapshot when the newest one is older than 7 days.
+
+### Fixed
+- Fresh-install restore with recovery words now adopts those words as the
+  device identity — previously the restored data was orphaned and a new
+  export required minting a new identity that didn't match the user's
+  written-down phrase.
+
+---
+
 ## [1.0.0] - 2026-02-24
 
 ### Added
