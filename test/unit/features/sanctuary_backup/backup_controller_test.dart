@@ -37,6 +37,7 @@ void main() {
   }) {
     final c = ProviderContainer(overrides: [
       secureKeyStoreProvider.overrideWithValue(store),
+      vaultStoreProvider.overrideWithValue(InMemoryVaultStore()),
       cryptoServiceProvider.overrideWithValue(const DefaultCryptoService()),
       backupSerializerProvider
           .overrideWith((ref) => LullabyBackupSerializer(database)),

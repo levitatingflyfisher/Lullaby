@@ -1,6 +1,7 @@
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:sanctuary_backup_ui/sanctuary_backup_ui.dart';
 
 import '../features/home_widget/presentation/controllers/home_widget_controller.dart';
 import '../features/settings/presentation/controllers/active_baby_controller.dart';
@@ -23,6 +24,12 @@ class _LullabyAppState extends ConsumerState<LullabyApp>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     HomeWidgetService.init();
+    // Silent freshness snapshot (BACKUP_RETENTION_SPEC §3): if the newest
+    // vault snapshot is >7 days old and a key exists, take one. Post-frame
+    // + fire-and-forget — never blocks boot, never surfaces errors.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(backupControllerProvider.notifier).runStartupMaintenance();
+    });
     // Update the widget once the active baby has actually loaded. The previous
     // post-frame callback ran while activeBabyProvider was still loading, so it
     // blanked the widget (baby id '') on every cold start.
