@@ -12,12 +12,22 @@ import '../../../services/database/database.dart';
 /// baby like the DAOs. Implements the package's [BackupSerializer] interface;
 /// the JSON envelope and table logic are unchanged from Lullaby's shipped
 /// format (SANCTUARY-BRIEF §4.W1: keep envelope/table logic identical).
-class LullabyBackupSerializer implements BackupSerializer {
+class LullabyBackupSerializer
+    implements BackupSerializer, PreviewableBackupSerializer {
   final AppDatabase _db;
 
   const LullabyBackupSerializer(this._db);
 
+  static const String _appId = 'lullaby';
+
   /// Reads every user-data table and returns the JSON payload as bytes.
+  ///
+  /// The shape is Lullaby's SHIPPED one (`schemaVersion`/`exportedAt`/
+  /// top-level `tables`) with two ADDITIVE keys the v2 retention spec
+  /// needs (`app`, `createdAt`). Old shipped readers only look at
+  /// schemaVersion + tables and ignore unknown keys, so backups made by
+  /// this build still restore on pre-v2 Lullaby installs — the wire
+  /// format is extended, never broken.
   @override
   Future<Uint8List> dumpAll() async {
     final allBabies = await _db.select(_db.babies).get();
@@ -28,9 +38,12 @@ class LullabyBackupSerializer implements BackupSerializer {
     final allMedicine = await _db.select(_db.medicineLogs).get();
     final allVaccines = await _db.select(_db.vaccineRecords).get();
 
+    final stamp = DateTime.now().toUtc().toIso8601String();
     final payload = <String, dynamic>{
+      'app': _appId,
       'schemaVersion': _db.schemaVersion,
-      'exportedAt': DateTime.now().toUtc().toIso8601String(),
+      'exportedAt': stamp,
+      'createdAt': stamp,
       'tables': {
         'babies': allBabies.map((r) => r.toJson()).toList(),
         'feedingLogs': allFeedings.map((r) => r.toJson()).toList(),
@@ -45,6 +58,26 @@ class LullabyBackupSerializer implements BackupSerializer {
     return Uint8List.fromList(utf8.encode(jsonEncode(payload)));
   }
 
+  /// The dry-run parse behind preview-before-restore and export
+  /// read-back: validates like [restoreAll], never writes.
+  @override
+  Future<BackupManifest> describeBackup(Uint8List plaintext) async {
+    _unwrap(plaintext);
+    return BackupEnvelope.describe(plaintext);
+  }
+
+  /// Envelope validation via the shared helper. `requireAppKey: false`
+  /// because every backup shipped Lullaby ever wrote has NO `app` key —
+  /// an absent key is tolerated, a present-and-wrong one still rejects.
+  /// (The AEAD context already binds the blob to Lullaby
+  /// cryptographically; this is defense in depth.)
+  UnwrappedBackup _unwrap(Uint8List data) => BackupEnvelope.unwrap(
+        data,
+        expectedAppId: _appId,
+        currentSchemaVersion: _db.schemaVersion,
+        requireAppKey: false,
+      );
+
   /// Restores all user data from a JSON [Uint8List] previously created by
   /// [dumpAll].
   ///
@@ -56,18 +89,8 @@ class LullabyBackupSerializer implements BackupSerializer {
   /// required fields.
   @override
   Future<void> restoreAll(Uint8List data) async {
-    final json = jsonDecode(utf8.decode(data)) as Map<String, dynamic>;
-
-    final version = json['schemaVersion'] as int?;
-    if (version == null) {
-      throw const FormatException('Missing schemaVersion in backup payload');
-    }
-    if (version > _db.schemaVersion) {
-      throw BackupSchemaException(version, _db.schemaVersion);
-    }
-
-    final tables = json['tables'] as Map<String, dynamic>?;
-    if (tables == null) {
+    final tables = _unwrap(data).payload['tables'];
+    if (tables is! Map<String, dynamic>) {
       throw const FormatException('Missing tables in backup payload');
     }
 
