@@ -1,22 +1,23 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
-import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
-import 'package:uuid/uuid.dart';
 
 import '../../../../core/errors/result.dart';
 import '../../domain/entities/baby.dart';
 import '../controllers/baby_controller.dart';
-
-const _uuid = Uuid();
+import '../widgets/baby_photo.dart';
 
 class BabyEditScreen extends ConsumerStatefulWidget {
-  const BabyEditScreen({super.key});
+  const BabyEditScreen({super.key, this.photoSupportedOverride});
+
+  /// Test seam for the platform photo capability. In production this stays
+  /// null and the conditional-import trio ([babyPhotoSupported]) decides:
+  /// true on native, false on web — where photos are device file paths a
+  /// browser can neither pick nor display, so the affordance is hidden
+  /// rather than left to throw.
+  final bool? photoSupportedOverride;
 
   @override
   ConsumerState<BabyEditScreen> createState() => _BabyEditScreenState();
@@ -49,30 +50,25 @@ class _BabyEditScreenState extends ConsumerState<BabyEditScreen> {
     }
   }
 
+  bool get _photoSupported =>
+      widget.photoSupportedOverride ?? babyPhotoSupported;
+
   Future<void> _pickPhoto() async {
     final picker = ImagePicker();
     final picked = await picker.pickImage(source: ImageSource.gallery);
     if (picked == null) return;
 
-    // image_picker returns a path in the OS cache/temp dir, which is purged
-    // under storage pressure (the avatar would silently vanish). Copy it into
-    // permanent app storage and persist that path instead.
-    final docsDir = await getApplicationDocumentsDirectory();
-    final avatarsDir = Directory(p.join(docsDir.path, 'avatars'));
-    await avatarsDir.create(recursive: true);
-    final ext = p.extension(picked.path);
-    final dest = p.join(avatarsDir.path, '${_uuid.v4()}$ext');
-    await File(picked.path).copy(dest);
+    // Copies the pick out of the purgeable OS cache into permanent app
+    // storage (native); resolves to a harmless no-op null on web, where the
+    // affordance is hidden anyway.
+    final stored = await persistPickedPhoto(picked);
+    if (stored == null) return;
 
-    if (mounted) setState(() => _photoPath = dest);
+    if (mounted) setState(() => _photoPath = stored);
   }
 
   /// The avatar image, or null if no photo is set or the file is missing.
-  ImageProvider? get _photoImage {
-    final path = _photoPath;
-    if (path != null && File(path).existsSync()) return FileImage(File(path));
-    return null;
-  }
+  ImageProvider? get _photoImage => babyPhotoImage(_photoPath);
 
   @override
   void dispose() {
@@ -93,7 +89,7 @@ class _BabyEditScreenState extends ConsumerState<BabyEditScreen> {
           children: [
             Center(
               child: GestureDetector(
-                onTap: _pickPhoto,
+                onTap: _photoSupported ? _pickPhoto : null,
                 child: CircleAvatar(
                   radius: 48,
                   backgroundImage: _photoImage,
@@ -104,13 +100,24 @@ class _BabyEditScreenState extends ConsumerState<BabyEditScreen> {
               ),
             ),
             const SizedBox(height: 8),
-            Center(
-              child: TextButton.icon(
-                onPressed: _pickPhoto,
-                icon: const Icon(Icons.photo_library),
-                label: const Text('Choose photo'),
+            if (_photoSupported)
+              Center(
+                child: TextButton.icon(
+                  onPressed: _pickPhoto,
+                  icon: const Icon(Icons.photo_library),
+                  label: const Text('Choose photo'),
+                ),
+              )
+            else
+              // Honest, calm copy instead of a button that would throw:
+              // the web build has no file system for photos to live in.
+              Center(
+                child: Text(
+                  'Baby photos are available in the Android app.',
+                  style: Theme.of(context).textTheme.bodySmall,
+                  textAlign: TextAlign.center,
+                ),
               ),
-            ),
             const SizedBox(height: 16),
             TextFormField(
               controller: _nameController,

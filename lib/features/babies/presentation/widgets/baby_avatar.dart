@@ -1,8 +1,7 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 
 import '../../domain/entities/baby.dart';
+import 'baby_photo.dart';
 
 class BabyAvatar extends StatelessWidget {
   const BabyAvatar({
@@ -18,14 +17,15 @@ class BabyAvatar extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    if (baby.photoPath != null) {
-      final file = File(baby.photoPath!);
-      if (file.existsSync()) {
-        return CircleAvatar(
-          radius: radius,
-          backgroundImage: FileImage(file),
-        );
-      }
+    // Resolved through the baby_photo trio: on web this is always null (a
+    // stored path points at some device's disk), so the widget never touches
+    // dart:io and calmly falls back to the initial-letter avatar.
+    final photo = babyPhotoImage(baby.photoPath);
+    if (photo != null) {
+      return CircleAvatar(
+        radius: radius,
+        backgroundImage: photo,
+      );
     }
 
     return CircleAvatar(
