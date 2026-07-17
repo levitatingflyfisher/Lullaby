@@ -44,6 +44,8 @@ dev_dependencies:
   sqlite3: ^2.9.4
   mocktail: ^1.0.4
   flutter_launcher_icons: ^0.14.3
+  oh_fleet_conformance:
+    path: ../packages/oh_fleet_conformance
 
 flutter_launcher_icons:
   android: true

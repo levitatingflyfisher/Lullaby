@@ -10,6 +10,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Fleet conformance suite (`oh_fleet_conformance` dev dependency +
+  `test/fleet_conformance_test.dart`): Lullaby's recorded posture is
+  tokens-tier style, ZERO Android permissions (the empty set is an
+  enforced claim, both directions), backup on the shared retention
+  package, and size budgets. `budgets.json` records the baselines
+  (gzipped `main.dart.js` + arm64 release APK, +5%) so size regressions
+  fail CI instead of accumulating silently.
+- CI clones the `ohStyle` and `ohFleetConformance` sibling repos so the
+  workflow covers every path dependency the pubspec declares.
+
+### Changed
+- `test/flutter_test_config.dart` replaced with the fleet-canonical
+  FontManifest-aware variant (byte-identical across Trellis/Reckon/
+  StillLife). All goldens re-rendered byte-identically — Lullaby bundles
+  no custom text fonts, so nothing visual changed.
 - Depend on the shared `openhearth_design` package (path dep, v0.4.0) as
   conformance readiness. A sweep of `lib/` found ZERO literals equal to
   canonical OpenHearth token values, so no colors were rewired and nothing
