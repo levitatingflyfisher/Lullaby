@@ -62,8 +62,18 @@ class LullabyBackupSerializer
   /// read-back: validates like [restoreAll], never writes.
   @override
   Future<BackupManifest> describeBackup(Uint8List plaintext) async {
-    _unwrap(plaintext);
+    _requireTables(_unwrap(plaintext).payload);
     return BackupEnvelope.describe(plaintext);
+  }
+
+  /// The tables gate [restoreAll] applies — shared so describe and
+  /// restore can never drift apart again.
+  static Map<String, dynamic> _requireTables(Map<String, Object?> payload) {
+    final tables = payload['tables'];
+    if (tables is! Map<String, dynamic>) {
+      throw const FormatException('Missing tables in backup payload');
+    }
+    return tables;
   }
 
   /// Envelope validation via the shared helper. `requireAppKey: false`
@@ -89,10 +99,7 @@ class LullabyBackupSerializer
   /// required fields.
   @override
   Future<void> restoreAll(Uint8List data) async {
-    final tables = _unwrap(data).payload['tables'];
-    if (tables is! Map<String, dynamic>) {
-      throw const FormatException('Missing tables in backup payload');
-    }
+    final tables = _requireTables(_unwrap(data).payload);
 
     await _db.transaction(() async {
       // Wipe in reverse FK order to avoid constraint violations.

@@ -336,6 +336,16 @@ void main() {
       expect(() => serializer.describeBackup(tooNew),
           throwsA(isA<BackupSchemaException>()));
 
+      // REVIEW FIX: describe must reject payloads restoreAll would reject —
+      // including a missing/non-map tables key.
+      final noTables = Uint8List.fromList(utf8.encode(jsonEncode({
+        'app': 'lullaby',
+        'schemaVersion': db.schemaVersion,
+        'exportedAt': '2026-06-01T10:00:00.000Z',
+      })));
+      expect(() => serializer.describeBackup(noTables),
+          throwsA(isA<FormatException>()));
+
       expect(await db.select(db.babies).get(), hasLength(1),
           reason: 'describe must never write');
     });
