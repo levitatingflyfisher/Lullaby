@@ -1,12 +1,11 @@
-import 'dart:io';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:share_plus/share_plus.dart';
 
 import '../doctor/presentation/controllers/doctor_controller.dart';
 import '../stats/domain/entities/daily_summary.dart';
+import 'data/export_file_share.dart';
 import 'export_service.dart';
 
 class ExportBottomSheet extends ConsumerStatefulWidget {
@@ -32,17 +31,13 @@ class _ExportBottomSheetState extends ConsumerState<ExportBottomSheet> {
     try {
       const svc = ExportService();
       final bytes = await svc.generateSummaryPdf(widget.summary);
-      final dir = await getTemporaryDirectory();
       final name = 'lullaby_${widget.summary.baby.name}_'
           '${_datePart(widget.summary.dateRange.start)}_'
           '${_datePart(widget.summary.dateRange.end)}.pdf';
-      final file = File('${dir.path}/$name');
-      await file.writeAsBytes(bytes);
-      try {
-        await Share.shareXFiles([XFile(file.path)]);
-      } finally {
-        if (await file.exists()) await file.delete();
-      }
+      // Through the export_file_share seam: temp-file share sheet on native,
+      // Web Share / download on the PWA — this sheet never touches dart:io.
+      final share = ref.read(exportFileShareProvider);
+      await share(bytes: bytes, fileName: name, mimeType: 'application/pdf');
       if (mounted) Navigator.of(context).pop();
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -55,17 +50,15 @@ class _ExportBottomSheetState extends ConsumerState<ExportBottomSheet> {
     try {
       const svc = ExportService();
       final csv = svc.generateSummaryCsv(widget.dailySummaries);
-      final dir = await getTemporaryDirectory();
       final name = 'lullaby_${widget.summary.baby.name}_'
           '${_datePart(widget.summary.dateRange.start)}_'
           '${_datePart(widget.summary.dateRange.end)}.csv';
-      final file = File('${dir.path}/$name');
-      await file.writeAsString(csv);
-      try {
-        await Share.shareXFiles([XFile(file.path)]);
-      } finally {
-        if (await file.exists()) await file.delete();
-      }
+      final share = ref.read(exportFileShareProvider);
+      await share(
+        bytes: utf8.encode(csv),
+        fileName: name,
+        mimeType: 'text/csv',
+      );
       if (mounted) Navigator.of(context).pop();
     } finally {
       if (mounted) setState(() => _busy = false);

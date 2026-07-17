@@ -10,7 +10,7 @@ void main() {
       routes: [
         GoRoute(
           path: '/',
-          builder: (_, __) =>
+          builder: (_, _) =>
               BabyEditScreen(photoSupportedOverride: photoSupported),
         ),
       ],

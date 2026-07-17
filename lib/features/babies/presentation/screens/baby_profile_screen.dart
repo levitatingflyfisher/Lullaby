@@ -1,15 +1,14 @@
-import 'dart:io';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:share_plus/share_plus.dart';
 
 import '../../../settings/presentation/controllers/active_baby_controller.dart';
 import '../widgets/baby_avatar.dart';
 import '../../domain/entities/baby.dart';
+import '../../../export/data/export_file_share.dart';
 import '../../../export/raw_export_controller.dart';
 
 class BabyProfileScreen extends ConsumerStatefulWidget {
@@ -28,16 +27,16 @@ class _BabyProfileScreenState extends ConsumerState<BabyProfileScreen> {
     try {
       ref.invalidate(rawExportProvider(baby.id));
       final csv = await ref.read(rawExportProvider(baby.id).future);
-      final dir = await getTemporaryDirectory();
       final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
       final fileName = 'lullaby_${baby.name}_raw_$today.csv';
-      final file = File('${dir.path}/$fileName');
-      await file.writeAsString(csv);
-      try {
-        await Share.shareXFiles([XFile(file.path)]);
-      } finally {
-        if (await file.exists()) await file.delete();
-      }
+      // Bytes go through the export_file_share seam: temp-file share sheet
+      // on native, Web Share / download on the PWA — never dart:io here.
+      final share = ref.read(exportFileShareProvider);
+      await share(
+        bytes: utf8.encode(csv),
+        fileName: fileName,
+        mimeType: 'text/csv',
+      );
     } finally {
       if (mounted) setState(() => _isExporting = false);
     }
