@@ -24,6 +24,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   workflow covers every path dependency the pubspec declares.
 
 ### Changed
+- `test/flutter_test_config.dart` re-synced to the fleet-canonical
+  variant: per-family font-load isolation (one font family failing to
+  load no longer aborts the families after it). The success path is
+  identical — all goldens verified byte-identical.
 - `test/flutter_test_config.dart` replaced with the fleet-canonical
   FontManifest-aware variant (byte-identical across Trellis/Reckon/
   StillLife). All goldens re-rendered byte-identically — Lullaby bundles
