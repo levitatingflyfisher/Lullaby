@@ -150,6 +150,27 @@ void main() {
       expect(p, isNull);
     });
 
+    test('returns null (not a crash) when a canonical band is missing', () {
+      // The doc promises null when no honest figure exists; a partial map
+      // must not null-assert its way into a TypeError.
+      final missingMiddle = {3: 4.0, 15: 5.0, 85: 6.0, 97: 7.0}; // no P50
+      expect(
+        PercentileCalculator.percentileFromBandPoints(missingMiddle, 5.5),
+        isNull,
+      );
+
+      final missingEdges = {15: 5.0, 50: 5.5, 85: 6.0}; // no P3 / P97
+      expect(
+        PercentileCalculator.percentileFromBandPoints(missingEdges, 5.5),
+        isNull,
+      );
+
+      expect(
+        PercentileCalculator.percentileFromBandPoints(const {}, 5.5),
+        isNull,
+      );
+    });
+
     test('matches getPercentile for an ordinary interpolation', () {
       final points = {3: 4.0, 15: 5.0, 50: 6.0, 85: 7.0, 97: 8.0};
       final p = PercentileCalculator.percentileFromBandPoints(points, 5.5);

@@ -44,6 +44,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Silent freshness snapshot when the newest one is older than 7 days.
 
 ### Fixed
+- WHO percentile interpolation returns the documented null instead of
+  crashing when handed a band map missing a canonical band (3/15/50/
+  85/97).
 - Fresh-install restore with recovery words now adopts those words as the
   device identity — previously the restored data was orphaned and a new
   export required minting a new identity that didn't match the user's

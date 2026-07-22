@@ -51,7 +51,8 @@ class PercentileCalculator {
 
   /// Interpolates a percentile from per-band values at a single age.
   ///
-  /// Returns null when [measurement] lands in no band — with strictly
+  /// Returns null when [points] is missing any canonical band (3/15/50/85/97)
+  /// or when [measurement] lands in no band — with strictly
   /// ascending band values that only happens for NaN, which the old code
   /// silently reported as the 50th percentile. Kept static and public so the
   /// degenerate-band division guard is testable (real WHO tables never
@@ -60,18 +61,24 @@ class PercentileCalculator {
     Map<int, double> points,
     double measurement,
   ) {
+    // A partial map has no honest answer either — return the documented
+    // null rather than null-asserting into a crash on a missing band.
+    final p3 = points[3];
+    final p97 = points[97];
+    if (p3 == null || p97 == null) return null;
     // If below 3rd percentile
-    if (measurement <= points[3]!) return 1.0;
+    if (measurement <= p3) return 1.0;
     // If above 97th percentile
-    if (measurement >= points[97]!) return 99.0;
+    if (measurement >= p97) return 99.0;
 
     // Linear interpolation between bands
     final percentiles = [3, 15, 50, 85, 97];
     for (int i = 0; i < percentiles.length - 1; i++) {
       final lowerP = percentiles[i];
       final upperP = percentiles[i + 1];
-      final lowerV = points[lowerP]!;
-      final upperV = points[upperP]!;
+      final lowerV = points[lowerP];
+      final upperV = points[upperP];
+      if (lowerV == null || upperV == null) return null;
 
       if (measurement >= lowerV && measurement <= upperV) {
         // Degenerate band (lowerV == upperV): the fraction would be 0/0 = NaN.
