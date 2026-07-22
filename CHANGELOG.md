@@ -16,7 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   enforced claim, both directions), backup on the shared retention
   package, and size budgets. `budgets.json` records the baselines
   (gzipped `main.dart.js` + arm64 release APK, +5%) so size regressions
-  fail CI instead of accumulating silently.
+  fail the suite on any machine that has built the artifacts — the
+  ratchet bites on local and deploy builds. (CI runs no build step, so
+  the size check skips there by design; a CI build step is deliberately
+  deferred.)
 - CI clones the `ohStyle` and `ohFleetConformance` sibling repos so the
   workflow covers every path dependency the pubspec declares.
 
