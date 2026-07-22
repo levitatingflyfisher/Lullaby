@@ -185,6 +185,14 @@ class ExportService {
                 style: const pw.TextStyle(fontSize: 9),
               ),
             ],
+            if (summary.percentilesNeedRecordedSex) ...[
+              pw.SizedBox(height: 4),
+              pw.Text(
+                'WHO percentiles need a recorded sex; add one in the '
+                "baby's profile to see them.",
+                style: const pw.TextStyle(fontSize: 9),
+              ),
+            ],
             pw.SizedBox(height: 12),
           ],
           if (summary.recentMedicines.isNotEmpty) ...[

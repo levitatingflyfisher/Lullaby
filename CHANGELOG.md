@@ -44,6 +44,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Silent freshness snapshot when the newest one is older than 7 days.
 
 ### Fixed
+- Doctor summary: a baby with no recorded sex now gets the honest WHO
+  notes it was promised. The out-of-range note (measurement beyond the
+  0–24 month tables) no longer depends on a recorded sex, and when the
+  measurement IS in range a new note names the actual blocker —
+  "WHO percentiles need a recorded sex" — on screen and in the PDF
+  export, instead of silently omitting percentiles.
 - WHO percentile interpolation returns the documented null instead of
   crashing when handed a band map missing a canonical band (3/15/50/
   85/97).

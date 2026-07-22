@@ -185,6 +185,15 @@ class DoctorSummaryScreen extends ConsumerWidget {
                               style: Theme.of(context).textTheme.bodySmall,
                             ),
                           ),
+                        if (summary.percentilesNeedRecordedSex)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8),
+                            child: Text(
+                              'WHO percentiles need a recorded sex; add '
+                              "one in the baby's profile to see them.",
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          ),
                       ] else
                         const Padding(
                           padding: EdgeInsets.symmetric(vertical: 8),

@@ -193,6 +193,42 @@ void main() {
       expect(find.textContaining('outside that range'), findsNothing);
     });
 
+    testWidgets(
+        'shows a "record a sex" note instead of a percentile when the '
+        'missing sex is the only blocker', (tester) async {
+      final growth = GrowthRecordEntity(
+        id: 'g1',
+        babyId: fakeBaby.id,
+        measuredAt: DateTime(2025, 6, 1),
+        weightKg: 7.0,
+        createdAt: DateTime(2025, 6, 1),
+        modifiedAt: DateTime(2025, 6, 1),
+      );
+      final summary = DoctorSummary(
+        baby: fakeBaby,
+        dateRange: fakeSummary.dateRange,
+        avgFeedsPerDay: 8.5,
+        avgSleepHoursPerDay: 14.2,
+        avgDiapersPerDay: 6.3,
+        latestGrowth: growth,
+        percentilesNeedRecordedSex: true,
+      );
+      await tester.pumpWidget(buildSubject(baby: fakeBaby, summary: summary));
+      await tester.pump();
+      await tester.pump();
+
+      // The measurement itself still shows, without a fabricated (P##).
+      expect(find.text('7.0 kg'), findsOneWidget);
+      expect(find.textContaining('(P'), findsNothing);
+      expect(
+        find.text(
+          "WHO percentiles need a recorded sex; add one in the baby's "
+          'profile to see them.',
+        ),
+        findsOneWidget,
+      );
+    });
+
     testWidgets('share icon onPressed is null while dailies are loading',
         (tester) async {
       await tester.pumpWidget(buildSubject(baby: fakeBaby, summary: fakeSummary));
