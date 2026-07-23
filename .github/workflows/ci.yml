@@ -62,6 +62,7 @@ jobs:
 
       # C3: the gz-JS size budget only bites when build/web exists
       - name: Build web (C3 budget artifact)
+        working-directory: Lullaby
         run: flutter build web --release
       - name: Run tests
         working-directory: Lullaby
