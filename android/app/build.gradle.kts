@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.lullaby"
+    namespace = "com.openhearth.lullaby"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -20,7 +20,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.lullaby"
+        applicationId = "com.openhearth.lullaby"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode

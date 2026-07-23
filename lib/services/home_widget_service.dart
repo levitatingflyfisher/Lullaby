@@ -10,7 +10,7 @@ import '../features/tracking/presentation/controllers/timer_controller.dart';
 class HomeWidgetService {
   HomeWidgetService._();
 
-  static const _appGroupId = 'group.com.example.lullaby';
+  static const _appGroupId = 'group.com.openhearth.lullaby';
 
   static Future<void> init() async {
     await HomeWidget.setAppGroupId(_appGroupId);

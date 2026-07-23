@@ -23,7 +23,7 @@ void main() => runFleetConformance(const FleetAppConfig(
         'android.permission.FOREGROUND_SERVICE',
         'android.permission.RECEIVE_BOOT_COMPLETED',
         'android.permission.WAKE_LOCK',
-        'com.example.lullaby.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION',
+        'com.openhearth.lullaby.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION',
       },
       // Startup runs the vault freshness/prune hook (lib/app/app.dart).
       expectStartupMaintenance: true,

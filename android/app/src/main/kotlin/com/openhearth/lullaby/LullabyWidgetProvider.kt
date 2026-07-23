@@ -1,4 +1,4 @@
-package com.example.lullaby
+package com.openhearth.lullaby
 
 import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
