@@ -48,6 +48,13 @@ no network calls in normal operation. Roughly 450 tests across ~75 files.
 - **Never commit** `docs/superpowers/` (local plans/specs) or the per-tool agent
   scratch guides (the ignored top-level `*.md` working notes) — they're gitignored
   working artifacts. The committed contributor guide is this file.
+- **The Android identity is `com.openhearth.lullaby`** (the `com.example`
+  template id was retired with a clean break — no legacy shim; the `.ohbk`
+  backup is the data hop between ids if one is ever needed).
+- **CI checks this repo out into a `Lullaby/` working directory** (so the
+  sibling `packages/` clones resolve at `../packages/`). Every workflow step
+  that runs Flutter needs `working-directory: Lullaby` — a step without it
+  fails with "No pubspec.yaml file found".
 
 ## Where things are (progressive disclosure)
 
