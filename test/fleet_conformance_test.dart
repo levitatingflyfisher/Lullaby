@@ -9,6 +9,13 @@ void main() => runFleetConformance(const FleetAppConfig(
       // platform font — which does have the ≤/≥ that boxed in Peckish.
       // There is no cmap of ours to check against. If Lullaby ever bundles
       // a family, switch to FleetAppConfig.withBundledFonts the same day.
+      // C8 is ON: any bare IconButton.filled/.filledTonal would paint its
+      // glyph the color of its own fill under ohStyle's ambient iconTheme.
+      // Filled icon buttons must come from OhIconButton instead.
+      checks: {
+        ...FleetAppConfig.defaultChecks,
+        FleetCheck.c8IconButtons,
+      },
       // Tokens tier: canonical openhearth_design is the declared dependency;
       // the shipped look stays blessed app identity (Lullaby's periwinkle
       // 0xFF7B8FD4 is app-local, not a canonical token) pinned by the
