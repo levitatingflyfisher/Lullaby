@@ -1,23 +1,22 @@
-Lullaby is a free, open-source baby tracker that keeps all your data on your device. No accounts, no cloud, no ads, no tracking.
+Lullaby is a baby tracker for exhausted parents that keeps everything on your device. No accounts, no cloud, no ads, no tracking.
 
-Track everything in one place:
-• Feeding — breast, bottle, and solids with live timer and left/right toggle
-• Sleep — nap and night sessions with start/stop timer
-• Diapers — wet, dirty, mixed, with stool color
-• Growth — weight, height, and head circumference plotted on WHO percentile curves
+Track it all in one place:
+• Feeding — breast, bottle and solids, with a live timer and left/right toggle
+• Sleep — naps and nights, start/stop
+• Diapers — wet, dirty, mixed, with stool colour
+• Growth — weight, height and head circumference on WHO percentile curves
 • Health — medicine doses and vaccination records
-• Statistics — feeding trends, sleep patterns, and diaper frequency charts
-• Calendar — browse events by day
-• Timeline — scrollable activity history with filter chips
-• Doctor summary — at-a-glance report you can share as PDF or CSV at appointments
+• Statistics — feeding trends, sleep patterns, diaper frequency
+• Timeline and calendar — browse by day or scroll the history
+• Doctor summary — an at-a-glance report you can hand over as PDF or CSV
 
-More features:
-• Encrypted backup — protect your data with a 12-word recovery phrase
-• Home screen widget — see last feed, sleep, and diaper at a glance with live timer
-• Multiple babies — manage profiles for more than one child
-• Dark mode — follows your system theme or set manually
-• Material You — dynamic color theming on supported devices
+More:
+• Encrypted backup with a 12-word recovery phrase
+• Home-screen widget — last feed, sleep and diaper, with a live timer
+• Several babies, if you have several babies
+• Dark mode and Material You
 
-Built by a nonprofit. No ads ever. No data collection ever.
-Source code: <REPO_URL_PLACEHOLDER>
-License: MIT
+The APK asks for no network permission at all, so it cannot send your child's data anywhere.
+
+Free and open source, MIT licensed.
+Source: https://github.com/levitatingflyfisher/Lullaby
