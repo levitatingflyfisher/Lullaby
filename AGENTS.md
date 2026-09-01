@@ -23,7 +23,7 @@ A **local-first Flutter baby tracker** — feeding, sleep, diapers, growth (WHO
 percentiles), medicine, vaccines, plus a dashboard, calendar, timeline,
 statistics, and a doctor summary with PDF/CSV export and optional encrypted
 backup. On-device SQLite (Drift), Riverpod state, Clean Architecture. No account,
-no network calls in normal operation. Roughly 450 tests across ~75 files.
+no network calls in normal operation. Roughly 570 tests across ~97 files.
 
 ## Non-negotiables (breaking one is a regression, not a feature)
 
@@ -102,8 +102,10 @@ dart run build_runner build --delete-conflicting-outputs   # regenerate Drift co
 - **Adding a feature**: mirror the existing shape — a folder under `lib/features/`
   with `domain/` (entity + abstract repo), `data/` (Drift-backed impl), and
   `presentation/` (screen + Riverpod controller). Register the repo provider in
-  `core/providers/repository_providers.dart` and the route in `app/router.dart`.
-  See [CONTRIBUTING.md](CONTRIBUTING.md).
+  `core/providers/repository_providers.dart` and the route in `app/router.dart`,
+  and give the route a visible, labelled caller from where a parent would look
+  for it — `test/unit/app/router_doors_test.dart` fails on a route nothing
+  navigates to. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## When you're unsure
 

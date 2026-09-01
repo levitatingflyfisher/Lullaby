@@ -81,6 +81,35 @@ void main() {
       expect(find.text('7.2 kg'), findsOneWidget);
     });
 
+    // lullaby:dmmt-09 — the WHO percentile was computed but never shown.
+    testWidgets('says the WHO percentile in words when a sex is recorded',
+        (tester) async {
+      final girl = fakeBaby.copyWith(gender: () => Gender.female);
+      await tester.pumpWidget(buildSubject(baby: girl, latest: fakeRecord));
+      await tester.pump();
+      await tester.pump();
+
+      // 7.2 kg / 65 cm for a girl at 6 months: both inside the WHO bands.
+      expect(
+          find.textContaining(RegExp(
+              r'^(About|Below|Above) the \d+(st|nd|rd|th) percentile for weight')),
+          findsOneWidget);
+      expect(
+          find.textContaining(RegExp(
+              r'^(About|Below|Above) the \d+(st|nd|rd|th) percentile for height')),
+          findsOneWidget);
+      expect(find.textContaining('percentile for head'), findsNothing);
+    });
+
+    testWidgets('names the blocker when no sex is recorded', (tester) async {
+      await tester.pumpWidget(buildSubject(baby: fakeBaby, latest: fakeRecord));
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.textContaining('percentile for'), findsNothing);
+      expect(find.textContaining('need a recorded sex'), findsOneWidget);
+    });
+
     testWidgets('shows Dismissible for each growth record', (tester) async {
       await tester.pumpWidget(buildSubject(baby: fakeBaby, latest: fakeRecord));
       await tester.pump();

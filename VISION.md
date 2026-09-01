@@ -82,8 +82,17 @@ As of v1.0.0:
 **Real, tested, load-bearing:**
 - The full tracking spine — feeding, sleep, diaper, growth, medicine, vaccine —
   with an on-device Drift/SQLite database, feature-first Clean Architecture, and
-  Riverpod controllers. Roughly 450 tests across ~75 files (unit, widget, golden).
-- The dashboard, calendar, timeline, statistics charts, and doctor summary.
+  Riverpod controllers. Roughly 570 tests across ~97 files (unit, widget, golden).
+- The dashboard, calendar, timeline, statistics charts, and doctor summary,
+  each with a visible door: statistics and growth charts on Timeline → Charts
+  (with **Growth details** opening the full growth screen), the calendar from
+  the top of Timeline → Events, and **Summary for the doctor** on the Baby tab. (Until
+  2026-09 the growth screen, calendar and doctor summary were registered but
+  unreachable; `test/unit/app/router_doors_test.dart` now fails if any route
+  loses its caller.)
+- **Deletes you can take back.** The Delete action on every edit form
+  removes the record and offers an Undo that never times out
+  (`test/widget/app/delete_undo_test.dart`); a swipe-delete asks first.
 - **PDF and CSV export**, with the CSV formula-injection neutralization tested.
 - **Encrypted backup/restore** to an `.ohbk` file: the app-side serialization,
   the OHBK wire format, the real audited crypto (`sanctuary_auth_core`), and

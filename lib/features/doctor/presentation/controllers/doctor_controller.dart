@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/errors/result.dart';
 import '../../../../core/providers/repository_providers.dart';
 import '../../../growth/domain/entities/growth_record.dart';
-import '../../../growth/domain/entities/who_percentile_data.dart';
+import '../../../growth/domain/growth_percentiles.dart';
 import '../../../babies/domain/entities/baby.dart';
 import '../../../health/medicine/domain/entities/medicine_log.dart';
 import '../../../health/vaccine/domain/entities/vaccine_record.dart';
@@ -100,49 +100,9 @@ final doctorSummaryProvider =
           ? vaccineResult.value
           : <VaccineRecordEntity>[];
 
-  double? weightPercentile;
-  double? heightPercentile;
-  double? headPercentile;
-  var growthOutsideWhoRange = false;
-  var percentilesNeedRecordedSex = false;
-
-  final gender = baby.gender;
-  if (latestGrowth != null) {
-    // Percentiles must be read at the age the measurement was TAKEN, not the
-    // baby's current age (H3) — an old measurement against today's age bands
-    // produces a wildly wrong figure.
-    final ageMonths =
-        latestGrowth.measuredAt.difference(baby.dateOfBirth).inDays / 30.44;
-    // The calculator itself returns null for ages outside its 0–24 month
-    // tables; this flag lets the UI say WHY the percentile is missing
-    // instead of silently omitting it. Checked before the gender guard —
-    // an out-of-range measurement is out of range whether or not a sex is
-    // recorded, and the note is owed either way.
-    growthOutsideWhoRange = !PercentileCalculator.ageWithinWhoRange(ageMonths);
-    if (gender == null) {
-      // Only computed when the sex is known (M8). When the age IS in range,
-      // the missing sex is the sole blocker — name it, distinctly from the
-      // range note, so the user knows recording a sex would unlock figures.
-      percentilesNeedRecordedSex = !growthOutsideWhoRange;
-    } else {
-      const calculator = PercentileCalculator();
-      if (latestGrowth.weightKg != null) {
-        weightPercentile = calculator.getPercentile(
-            gender, ageMonths, latestGrowth.weightKg!, MeasurementType.weight);
-      }
-      if (latestGrowth.heightCm != null) {
-        heightPercentile = calculator.getPercentile(
-            gender, ageMonths, latestGrowth.heightCm!, MeasurementType.height);
-      }
-      if (latestGrowth.headCircumferenceCm != null) {
-        headPercentile = calculator.getPercentile(
-            gender,
-            ageMonths,
-            latestGrowth.headCircumferenceCm!,
-            MeasurementType.headCircumference);
-      }
-    }
-  }
+  final percentiles = latestGrowth == null
+      ? const GrowthPercentiles()
+      : GrowthPercentiles.of(latestGrowth, baby);
 
   return DoctorSummary(
     baby: baby,
@@ -151,11 +111,11 @@ final doctorSummaryProvider =
     avgSleepHoursPerDay: averages.avgSleepHours,
     avgDiapersPerDay: averages.avgDiapers,
     latestGrowth: latestGrowth,
-    weightPercentile: weightPercentile,
-    heightPercentile: heightPercentile,
-    headPercentile: headPercentile,
-    growthOutsideWhoRange: growthOutsideWhoRange,
-    percentilesNeedRecordedSex: percentilesNeedRecordedSex,
+    weightPercentile: percentiles.weight,
+    heightPercentile: percentiles.height,
+    headPercentile: percentiles.head,
+    growthOutsideWhoRange: percentiles.outsideWhoRange,
+    percentilesNeedRecordedSex: percentiles.needsRecordedSex,
     recentMedicines: recentMedicines,
     administeredVaccines: administeredVaccines,
   );

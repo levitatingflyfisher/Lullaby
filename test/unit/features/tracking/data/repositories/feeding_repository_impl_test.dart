@@ -93,5 +93,25 @@ void main() {
       final logs = (result as Success<List<FeedingLogEntity>>).value;
       expect(logs.first.side, BreastSide.both);
     });
+
+    // A note saved while the form is open must never undo a Stop that landed
+    // first (e.g. from the Home timer card): only the notes column changes.
+    test('updateNotes writes notes without touching endTime', () async {
+      await repo.createFeeding(makeLog());
+      final stoppedAt = now.add(const Duration(minutes: 15));
+      await repo.updateFeeding(makeLog().copyWith(
+        endTime: () => stoppedAt,
+        durationMinutes: () => 15,
+      ));
+
+      final result = await repo.updateNotes('f1', 'fussy, switched sides');
+      expect(result, isA<Success<void>>());
+
+      final all = await repo.getAllForBaby('baby1');
+      final log = (all as Success<List<FeedingLogEntity>>).value.single;
+      expect(log.notes, 'fussy, switched sides');
+      expect(log.endTime, stoppedAt);
+      expect(log.durationMinutes, 15);
+    });
   });
 }

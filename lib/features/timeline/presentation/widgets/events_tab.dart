@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/extensions/date_extensions.dart';
@@ -7,6 +8,7 @@ import '../../../settings/presentation/controllers/active_baby_controller.dart';
 import '../controllers/timeline_controller.dart';
 import 'timeline_entry_card.dart';
 import 'timeline_filter_chips.dart';
+import '../../../../core/widgets/load_failure.dart';
 
 class EventsTab extends ConsumerWidget {
   const EventsTab({super.key});
@@ -25,6 +27,17 @@ class EventsTab extends ConsumerWidget {
 
         return Column(
           children: [
+            Align(
+              alignment: AlignmentDirectional.centerEnd,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: TextButton.icon(
+                  onPressed: () => context.push('/calendar'),
+                  icon: const Icon(Icons.calendar_month),
+                  label: const Text('Calendar'),
+                ),
+              ),
+            ),
             const TimelineFilterChips(),
             const SizedBox(height: 8),
             Expanded(
@@ -75,14 +88,24 @@ class EventsTab extends ConsumerWidget {
                 },
                 loading: () =>
                     const Center(child: CircularProgressIndicator()),
-                error: (e, _) => Center(child: Text('Error: $e')),
+                error: (e, st) => LoadFailure(
+                  what: 'the timeline',
+                  error: e,
+                  stackTrace: st,
+                  onRetry: () => ref.invalidate(timelineProvider(activeBaby.id)),
+                ),
               ),
             ),
           ],
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(child: Text('Error: $e')),
+      error: (e, st) => LoadFailure(
+        what: 'your baby’s details',
+        error: e,
+        stackTrace: st,
+        onRetry: () => ref.invalidate(activeBabyProvider),
+      ),
     );
   }
 }

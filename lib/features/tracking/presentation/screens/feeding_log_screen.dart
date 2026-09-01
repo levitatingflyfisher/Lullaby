@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openhearth_design/openhearth_design.dart';
 
 import '../../domain/entities/feeding_log.dart';
 import '../controllers/feeding_controller.dart';
 import '../controllers/timer_controller.dart';
 import '../widgets/side_toggle.dart';
 import '../widgets/timer_display.dart';
+import '../../../../app/undo_host.dart';
+import '../../../../core/errors/result.dart';
 
 class FeedingLogScreen extends ConsumerStatefulWidget {
   const FeedingLogScreen({super.key});
@@ -28,6 +31,25 @@ class _FeedingLogScreenState extends ConsumerState<FeedingLogScreen> {
   bool _initialized = false;
 
   @override
+  void initState() {
+    super.initState();
+    _notesController.addListener(_saveNotesToOpenFeed);
+  }
+
+  String? _lastSavedNotes;
+
+  /// While a breast feed started here is open, keep its notes saved as they
+  /// are typed: the Home timer card can stop the feed without this form, and
+  /// its Stop carries no notes. Only the notes column is written.
+  void _saveNotesToOpenFeed() {
+    final logId = _activeLogId;
+    final text = _notesController.text;
+    if (logId == null || text == _lastSavedNotes) return;
+    _lastSavedNotes = text;
+    ref.read(feedingControllerProvider.notifier).saveFeedNotes(logId, text);
+  }
+
+  @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (_initialized) return;
@@ -41,11 +63,16 @@ class _FeedingLogScreenState extends ConsumerState<FeedingLogScreen> {
       _notesController.text = extra.notes ?? '';
       _startTime = extra.startTime;
       _endTime = extra.endTime;
+    } else if (extra is FeedingType) {
+      // Create mode opened from the Feed sheet: the parent already chose the
+      // type, so don't ask again (doet-01).
+      _type = extra;
     }
   }
 
   @override
   void dispose() {
+    _notesController.removeListener(_saveNotesToOpenFeed);
     _amountController.dispose();
     _notesController.dispose();
     super.dispose();
@@ -107,33 +134,27 @@ class _FeedingLogScreenState extends ConsumerState<FeedingLogScreen> {
     return _buildCreateMode(context);
   }
 
-  Future<void> _confirmDelete() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete entry?'),
-        content: const Text('This cannot be undone.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: TextButton.styleFrom(
-              foregroundColor: Theme.of(ctx).colorScheme.error,
-            ),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
-    if (confirmed == true && mounted) {
-      await ref
-          .read(feedingControllerProvider.notifier)
-          .deleteLog(_existing!.id);
-      if (mounted) Navigator.pop(context);
+  /// A deliberate delete (the form's own Delete action): no question first,
+  /// and an Undo that stays until the parent acts on it (operator ruling Q1).
+  Future<void> _delete() async {
+    final deleted = _existing!;
+    final controller = ref.read(feedingControllerProvider.notifier);
+    final undo = ref.read(undoControllerProvider);
+    final result = await controller.deleteLog(deleted.id);
+    if (!mounted) return;
+    if (result is Err) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Couldn’t delete this feed. Please try again.')),
+      );
+      return;
     }
+    undo.show(
+      message: 'Feed deleted',
+      onUndo: () async {
+        await controller.restoreLog(deleted);
+      },
+    );
+    Navigator.pop(context);
   }
 
   Widget _buildEditMode(BuildContext context) {
@@ -141,92 +162,103 @@ class _FeedingLogScreenState extends ConsumerState<FeedingLogScreen> {
       appBar: AppBar(
         title: const Text('Edit Feeding'),
         actions: [
-          IconButton(
+          TextButton.icon(
             icon: const Icon(Icons.delete_outline),
-            onPressed: _confirmDelete,
+            label: const Text('Delete'),
+            // Urgency colour with the bin and the word (ohStyle colour roles).
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(context).colorScheme.error,
+            ),
+            onPressed: _delete,
           ),
         ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          SegmentedButton<FeedingType>(
-            segments: const [
-              ButtonSegment(value: FeedingType.breast, label: Text('Breast')),
-              ButtonSegment(value: FeedingType.bottle, label: Text('Bottle')),
-              ButtonSegment(value: FeedingType.solid, label: Text('Solid')),
-            ],
-            selected: {_type},
-            onSelectionChanged: (set) => setState(() => _type = set.first),
-          ),
-          const SizedBox(height: 24),
-
-          if (_type == FeedingType.breast) ...[
-            SideToggle(
-              selected: _side,
-              onChanged: (side) => setState(() => _side = side),
+      body: OhPage(
+        padding: EdgeInsets.zero,
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            SegmentedButton<FeedingType>(
+              // Below 360dp the check mark would break "Breast" mid-word in
+              // Nunito; the fill still shows the choice (operator ruling).
+              showSelectedIcon: MediaQuery.sizeOf(context).width >= 360,
+              segments: const [
+                ButtonSegment(value: FeedingType.breast, label: Text('Breast')),
+                ButtonSegment(value: FeedingType.bottle, label: Text('Bottle')),
+                ButtonSegment(value: FeedingType.solid, label: Text('Solid')),
+              ],
+              selected: {_type},
+              onSelectionChanged: (set) => setState(() => _type = set.first),
             ),
-            const SizedBox(height: 16),
-          ],
+            const SizedBox(height: 24),
 
-          if (_type == FeedingType.bottle) ...[
-            TextField(
-              controller: _amountController,
-              decoration: const InputDecoration(
-                labelText: 'Amount (ml)',
-                border: OutlineInputBorder(),
+            if (_type == FeedingType.breast) ...[
+              SideToggle(
+                selected: _side,
+                onChanged: (side) => setState(() => _side = side),
               ),
-              keyboardType: TextInputType.number,
-            ),
-            const SizedBox(height: 16),
-          ],
+              const SizedBox(height: 16),
+            ],
 
-          ListTile(
-            title: const Text('Start time'),
-            subtitle: Text(_formatDateTime(_startTime)),
-            trailing: const Icon(Icons.schedule),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: BorderSide(color: Theme.of(context).colorScheme.outline),
-            ),
-            onTap: () => _pickDateTime(
-                context, _startTime, (dt) => setState(() => _startTime = dt)),
-          ),
-          const SizedBox(height: 12),
+            if (_type == FeedingType.bottle) ...[
+              TextField(
+                controller: _amountController,
+                decoration: const InputDecoration(
+                  labelText: 'Amount (ml)',
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.number,
+              ),
+              const SizedBox(height: 16),
+            ],
 
-          if (_type == FeedingType.breast) ...[
             ListTile(
-              title: const Text('End time (optional)'),
-              subtitle: Text(_endTime != null ? _formatDateTime(_endTime!) : 'Not set'),
+              title: const Text('Start time'),
+              subtitle: Text(_formatDateTime(_startTime)),
               trailing: const Icon(Icons.schedule),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
                 side: BorderSide(color: Theme.of(context).colorScheme.outline),
               ),
               onTap: () => _pickDateTime(
-                  context, _endTime ?? _startTime,
-                  (dt) => setState(() => _endTime = dt)),
+                  context, _startTime, (dt) => setState(() => _startTime = dt)),
             ),
             const SizedBox(height: 12),
+
+            if (_type == FeedingType.breast) ...[
+              ListTile(
+                title: const Text('End time (optional)'),
+                subtitle: Text(_endTime != null ? _formatDateTime(_endTime!) : 'Not set'),
+                trailing: const Icon(Icons.schedule),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: BorderSide(color: Theme.of(context).colorScheme.outline),
+                ),
+                onTap: () => _pickDateTime(
+                    context, _endTime ?? _startTime,
+                    (dt) => setState(() => _endTime = dt)),
+              ),
+              const SizedBox(height: 12),
+            ],
+
+            TextField(
+              controller: _notesController,
+              decoration: const InputDecoration(
+                labelText: 'Notes (optional)',
+                border: OutlineInputBorder(),
+              ),
+              maxLines: 3,
+            ),
+            const SizedBox(height: 24),
+
+            Center(
+              child: FilledButton(
+                onPressed: _saveEdit,
+                child: const Text('Save'),
+              ),
+            ),
           ],
-
-          TextField(
-            controller: _notesController,
-            decoration: const InputDecoration(
-              labelText: 'Notes (optional)',
-              border: OutlineInputBorder(),
-            ),
-            maxLines: 3,
-          ),
-          const SizedBox(height: 24),
-
-          Center(
-            child: FilledButton(
-              onPressed: _saveEdit,
-              child: const Text('Save'),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -239,123 +271,147 @@ class _FeedingLogScreenState extends ConsumerState<FeedingLogScreen> {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Log Feeding')),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          // Type selector
-          SegmentedButton<FeedingType>(
-            segments: const [
-              ButtonSegment(value: FeedingType.breast, label: Text('Breast')),
-              ButtonSegment(value: FeedingType.bottle, label: Text('Bottle')),
-              ButtonSegment(value: FeedingType.solid, label: Text('Solid')),
-            ],
-            selected: {_type},
-            onSelectionChanged: (set) => setState(() => _type = set.first),
-          ),
-          const SizedBox(height: 24),
-
-          // Type-specific fields
-          if (_type == FeedingType.breast) ...[
-            SideToggle(
-              selected: _side,
-              onChanged: (side) => setState(() => _side = side),
+      body: OhPage(
+        padding: EdgeInsets.zero,
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            // Type selector
+            SegmentedButton<FeedingType>(
+              // Below 360dp the check mark would break "Breast" mid-word in
+              // Nunito; the fill still shows the choice (operator ruling).
+              showSelectedIcon: MediaQuery.sizeOf(context).width >= 360,
+              segments: const [
+                ButtonSegment(value: FeedingType.breast, label: Text('Breast')),
+                ButtonSegment(value: FeedingType.bottle, label: Text('Bottle')),
+                ButtonSegment(value: FeedingType.solid, label: Text('Solid')),
+              ],
+              selected: {_type},
+              onSelectionChanged: (set) => setState(() => _type = set.first),
             ),
             const SizedBox(height: 24),
-            if (feedingTimer != null) ...[
-              Center(child: TimerDisplay(elapsed: feedingTimer.elapsed)),
-              const SizedBox(height: 16),
-              Center(
-                child: FilledButton.icon(
-                  onPressed: () {
-                    ref
-                        .read(feedingControllerProvider.notifier)
-                        .stopBreastFeeding(_activeLogId!);
-                    setState(() => _activeLogId = null);
-                    if (mounted) Navigator.pop(context);
-                  },
-                  style: FilledButton.styleFrom(
-                    backgroundColor: Theme.of(context).colorScheme.error,
-                    foregroundColor: Theme.of(context).colorScheme.onError,
-                  ),
-                  icon: const Icon(Icons.stop),
-                  label: const Text('Stop'),
-                ),
-              ),
-            ] else
-              Center(
-                child: FilledButton.icon(
-                  onPressed: () async {
-                    final log = await ref
-                        .read(feedingControllerProvider.notifier)
-                        .startBreastFeeding(_side);
-                    if (log != null) {
-                      setState(() => _activeLogId = log.id);
-                    }
-                  },
-                  icon: const Icon(Icons.play_arrow),
-                  label: const Text('Start'),
-                ),
-              ),
-          ],
 
-          if (_type == FeedingType.bottle) ...[
-            TextField(
-              controller: _amountController,
-              decoration: const InputDecoration(
-                labelText: 'Amount (ml)',
-                border: OutlineInputBorder(),
+            // Type-specific fields
+            if (_type == FeedingType.breast) ...[
+              SideToggle(
+                selected: _side,
+                onChanged: (side) => setState(() => _side = side),
               ),
-              keyboardType: TextInputType.number,
-            ),
-            const SizedBox(height: 16),
-            Center(
-              child: FilledButton(
-                onPressed: () {
-                  final amount =
-                      double.tryParse(_amountController.text) ?? 0;
-                  if (amount > 0) {
-                    ref
-                        .read(feedingControllerProvider.notifier)
-                        .logBottleFeeding(
-                          amountMl: amount,
+              const SizedBox(height: 24),
+              if (feedingTimer != null) ...[
+                Center(child: TimerDisplay(elapsed: feedingTimer.elapsed)),
+                const SizedBox(height: 16),
+                Center(
+                  child: FilledButton.icon(
+                    onPressed: () {
+                      ref
+                          .read(feedingControllerProvider.notifier)
+                          .stopBreastFeeding(
+                            _activeLogId!,
+                            notes: _notesController.text.isNotEmpty
+                                ? _notesController.text
+                                : null,
+                          );
+                      setState(() => _activeLogId = null);
+                      if (mounted) Navigator.pop(context);
+                    },
+                    style: FilledButton.styleFrom(
+                      backgroundColor: Theme.of(context).colorScheme.error,
+                      foregroundColor: Theme.of(context).colorScheme.onError,
+                    ),
+                    icon: const Icon(Icons.stop),
+                    label: const Text('Stop'),
+                  ),
+                ),
+              ] else
+                Center(
+                  child: FilledButton.icon(
+                    onPressed: () async {
+                      final log = await ref
+                          .read(feedingControllerProvider.notifier)
+                          .startBreastFeeding(
+                            _side,
+                            notes: _notesController.text.isNotEmpty
+                                ? _notesController.text
+                                : null,
+                          );
+                      if (log != null) {
+                        // Start already stored whatever was typed so far.
+                        _lastSavedNotes = _notesController.text;
+                        setState(() => _activeLogId = log.id);
+                      }
+                    },
+                    icon: const Icon(Icons.play_arrow),
+                    label: const Text('Start'),
+                  ),
+                ),
+            ],
+
+            if (_type == FeedingType.bottle) ...[
+              TextField(
+                controller: _amountController,
+                decoration: const InputDecoration(
+                  labelText: 'Amount (ml)',
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.number,
+              ),
+              const SizedBox(height: 16),
+              // Save stays disabled until the amount is a positive number, so
+              // a tap never silently does nothing (doet-02).
+              ValueListenableBuilder<TextEditingValue>(
+                valueListenable: _amountController,
+                builder: (context, value, _) {
+                  final amount = double.tryParse(value.text) ?? 0;
+                  return Center(
+                    child: FilledButton(
+                      onPressed: amount > 0
+                          ? () {
+                              ref
+                                  .read(feedingControllerProvider.notifier)
+                                  .logBottleFeeding(
+                                    amountMl: amount,
+                                    notes: _notesController.text.isNotEmpty
+                                        ? _notesController.text
+                                        : null,
+                                  );
+                              Navigator.pop(context);
+                            }
+                          : null,
+                      child: const Text('Save'),
+                    ),
+                  );
+                },
+              ),
+            ],
+
+            if (_type == FeedingType.solid) ...[
+              Center(
+                child: FilledButton(
+                  onPressed: () {
+                    ref.read(feedingControllerProvider.notifier).logSolidFeeding(
                           notes: _notesController.text.isNotEmpty
                               ? _notesController.text
                               : null,
                         );
                     Navigator.pop(context);
-                  }
-                },
-                child: const Text('Save'),
+                  },
+                  child: const Text('Save'),
+                ),
               ),
+            ],
+
+            const SizedBox(height: 16),
+            TextField(
+              controller: _notesController,
+              decoration: const InputDecoration(
+                labelText: 'Notes (optional)',
+                border: OutlineInputBorder(),
+              ),
+              maxLines: 3,
             ),
           ],
-
-          if (_type == FeedingType.solid) ...[
-            Center(
-              child: FilledButton(
-                onPressed: () {
-                  ref.read(feedingControllerProvider.notifier).logSolidFeeding(
-                        notes: _notesController.text.isNotEmpty
-                            ? _notesController.text
-                            : null,
-                      );
-                  Navigator.pop(context);
-                },
-                child: const Text('Save'),
-              ),
-            ),
-          ],
-
-          const SizedBox(height: 16),
-          TextField(
-            controller: _notesController,
-            decoration: const InputDecoration(
-              labelText: 'Notes (optional)',
-              border: OutlineInputBorder(),
-            ),
-            maxLines: 3,
-          ),
-        ],
+        ),
       ),
     );
   }

@@ -10,8 +10,8 @@ class DiaperFrequencyChart extends StatelessWidget {
 
   final List<DailySummary> summaries;
 
-  static const _wetColor = Color(0xFF42A5F5);
-  static const _dirtyColor = Color(0xFF8D6E63);
+  static const _wetColor = AppColorSchemes.diaperWetColor;
+  static const _dirtyColor = AppColorSchemes.diaperDirtyColor;
   static const _bothColor = AppColorSchemes.diaperColor;
 
   @override

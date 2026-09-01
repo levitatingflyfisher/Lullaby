@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lullaby/app/theme/theme.dart';
 import 'package:lullaby/features/dashboard/presentation/widgets/active_timer_card.dart';
 import 'package:lullaby/features/tracking/presentation/controllers/timer_controller.dart';
 
@@ -88,5 +90,55 @@ void main() {
 
       expect(find.byIcon(Icons.bedtime), findsOneWidget);
     });
+
+    // At 320dp and text scale 3.0 the label, the clock and STOP shared one
+    // row, so "Breast (left)" and "00:05:30" broke one character per line.
+    for (final (width, scale) in const [
+      (360.0, 1.0),
+      (320.0, 1.0),
+      (360.0, 2.0),
+      (320.0, 3.0),
+    ]) {
+      testWidgets('clock on one line at ${width.toInt()}dp x $scale',
+          (tester) async {
+        tester.view.physicalSize = Size(width, 800);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        await tester.pumpWidget(MaterialApp(
+          theme: AppTheme.light(),
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context)
+                .copyWith(textScaler: TextScaler.linear(scale)),
+            child: child!,
+          ),
+          home: Scaffold(
+            body: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: ActiveTimerCard(timer: timer, onStop: () {}),
+            ),
+          ),
+        ));
+
+        expect(tester.takeException(), isNull);
+        final clock =
+            tester.renderObject<RenderParagraph>(find.text('00:05:30'));
+        expect(_lines(clock), 1,
+            reason: 'the clock wrapped');
+        final label =
+            tester.renderObject<RenderParagraph>(find.text('Breast (left)'));
+        // Two words may take two lines at 3.0; four or more lines is the
+        // old letter-by-letter break.
+        expect(_lines(label), lessThanOrEqualTo(2),
+            reason: 'the label broke up');
+        expect(find.text('STOP').hitTestable(), findsOneWidget);
+        final stop = tester.getRect(find.text('STOP'));
+        expect(stop.right, lessThanOrEqualTo(width));
+      });
+    }
   });
 }
+
+/// How many lines a paragraph was laid out on: its height over the height
+/// of the same text on one unbroken line.
+int _lines(RenderParagraph p) =>
+    (p.size.height / p.getMinIntrinsicHeight(double.infinity)).round();

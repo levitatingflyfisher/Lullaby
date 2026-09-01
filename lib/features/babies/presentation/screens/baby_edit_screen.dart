@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import 'package:openhearth_design/openhearth_design.dart';
 
 import '../../../../core/errors/result.dart';
 import '../../domain/entities/baby.dart';
@@ -82,99 +83,102 @@ class _BabyEditScreenState extends ConsumerState<BabyEditScreen> {
       appBar: AppBar(
         title: Text(_isEditing ? 'Edit Baby' : 'Add Baby'),
       ),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            Center(
-              child: GestureDetector(
-                onTap: _photoSupported ? _pickPhoto : null,
-                child: CircleAvatar(
-                  radius: 48,
-                  backgroundImage: _photoImage,
-                  child: _photoImage == null
-                      ? const Icon(Icons.person, size: 48)
-                      : null,
-                ),
-              ),
-            ),
-            const SizedBox(height: 8),
-            if (_photoSupported)
+      body: OhPage(
+        padding: EdgeInsets.zero,
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
               Center(
-                child: TextButton.icon(
-                  onPressed: _pickPhoto,
-                  icon: const Icon(Icons.photo_library),
-                  label: const Text('Choose photo'),
-                ),
-              )
-            else
-              // Honest, calm copy instead of a button that would throw:
-              // the web build has no file system for photos to live in.
-              Center(
-                child: Text(
-                  'Baby photos are available in the Android app.',
-                  style: Theme.of(context).textTheme.bodySmall,
-                  textAlign: TextAlign.center,
+                child: GestureDetector(
+                  onTap: _photoSupported ? _pickPhoto : null,
+                  child: CircleAvatar(
+                    radius: 48,
+                    backgroundImage: _photoImage,
+                    child: _photoImage == null
+                        ? const Icon(Icons.person, size: 48)
+                        : null,
+                  ),
                 ),
               ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _nameController,
-              decoration: const InputDecoration(
-                labelText: 'Name',
-                border: OutlineInputBorder(),
+              const SizedBox(height: 8),
+              if (_photoSupported)
+                Center(
+                  child: TextButton.icon(
+                    onPressed: _pickPhoto,
+                    icon: const Icon(Icons.photo_library),
+                    label: const Text('Choose photo'),
+                  ),
+                )
+              else
+                // Honest, calm copy instead of a button that would throw:
+                // the web build has no file system for photos to live in.
+                Center(
+                  child: Text(
+                    'Baby photos are available in the Android app.',
+                    style: Theme.of(context).textTheme.bodySmall,
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _nameController,
+                decoration: const InputDecoration(
+                  labelText: 'Name',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) =>
+                    value == null || value.isEmpty ? 'Name is required' : null,
+                textCapitalization: TextCapitalization.words,
               ),
-              validator: (value) =>
-                  value == null || value.isEmpty ? 'Name is required' : null,
-              textCapitalization: TextCapitalization.words,
-            ),
-            const SizedBox(height: 16),
+              const SizedBox(height: 16),
 
-            ListTile(
-              title: const Text('Date of Birth'),
-              subtitle: Text(DateFormat.yMMMd().format(_dateOfBirth)),
-              trailing: const Icon(Icons.calendar_today),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-                side: BorderSide(color: Theme.of(context).colorScheme.outline),
+              ListTile(
+                title: const Text('Date of Birth'),
+                subtitle: Text(DateFormat.yMMMd().format(_dateOfBirth)),
+                trailing: const Icon(Icons.calendar_today),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: BorderSide(color: Theme.of(context).colorScheme.outline),
+                ),
+                onTap: () async {
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate: _dateOfBirth,
+                    firstDate: DateTime(2020),
+                    lastDate: DateTime.now(),
+                  );
+                  if (picked != null) {
+                    setState(() => _dateOfBirth = picked);
+                  }
+                },
               ),
-              onTap: () async {
-                final picked = await showDatePicker(
-                  context: context,
-                  initialDate: _dateOfBirth,
-                  firstDate: DateTime(2020),
-                  lastDate: DateTime.now(),
-                );
-                if (picked != null) {
-                  setState(() => _dateOfBirth = picked);
-                }
-              },
-            ),
-            const SizedBox(height: 16),
+              const SizedBox(height: 16),
 
-            DropdownButtonFormField<Gender>(
-              decoration: const InputDecoration(
-                labelText: 'Sex (optional)',
-                border: OutlineInputBorder(),
+              DropdownButtonFormField<Gender>(
+                decoration: const InputDecoration(
+                  labelText: 'Sex (optional)',
+                  border: OutlineInputBorder(),
+                ),
+                initialValue: _gender,
+                items: Gender.values
+                    .map((g) => DropdownMenuItem(
+                          value: g,
+                          child: Text(
+                              g.name[0].toUpperCase() + g.name.substring(1)),
+                        ))
+                    .toList(),
+                onChanged: (g) => setState(() => _gender = g),
               ),
-              initialValue: _gender,
-              items: Gender.values
-                  .map((g) => DropdownMenuItem(
-                        value: g,
-                        child: Text(
-                            g.name[0].toUpperCase() + g.name.substring(1)),
-                      ))
-                  .toList(),
-              onChanged: (g) => setState(() => _gender = g),
-            ),
-            const SizedBox(height: 24),
+              const SizedBox(height: 24),
 
-            FilledButton(
-              onPressed: _save,
-              child: Text(_isEditing ? 'Save' : 'Add Baby'),
-            ),
-          ],
+              FilledButton(
+                onPressed: _save,
+                child: Text(_isEditing ? 'Save' : 'Add Baby'),
+              ),
+            ],
+          ),
         ),
       ),
     );

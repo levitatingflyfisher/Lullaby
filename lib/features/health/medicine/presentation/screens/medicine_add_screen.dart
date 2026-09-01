@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:openhearth_design/openhearth_design.dart';
 
 import '../../domain/entities/medicine_log.dart';
 import '../../../../../features/settings/presentation/controllers/active_baby_controller.dart';
 import '../controllers/medicine_controller.dart';
+import '../../../../../app/undo_host.dart';
+import '../../../../../core/errors/result.dart';
 
 const _dosageUnits = ['ml', 'mg', 'drops', 'tablet'];
 
@@ -116,33 +119,27 @@ class _MedicineAddScreenState extends ConsumerState<MedicineAddScreen> {
     if (mounted) Navigator.pop(context);
   }
 
-  Future<void> _confirmDelete() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete entry?'),
-        content: const Text('This cannot be undone.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: TextButton.styleFrom(
-              foregroundColor: Theme.of(ctx).colorScheme.error,
-            ),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
-    if (confirmed == true && mounted) {
-      await ref
-          .read(medicineControllerProvider.notifier)
-          .delete(_existing!.id);
-      if (mounted) Navigator.pop(context);
+  /// A deliberate delete (the form's own Delete action): no question first,
+  /// and an Undo that stays until the parent acts on it (operator ruling Q1).
+  Future<void> _delete() async {
+    final deleted = _existing!;
+    final controller = ref.read(medicineControllerProvider.notifier);
+    final undo = ref.read(undoControllerProvider);
+    final result = await controller.delete(deleted.id);
+    if (!mounted) return;
+    if (result is Err) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Couldn’t delete this dose. Please try again.')),
+      );
+      return;
     }
+    undo.show(
+      message: 'Medicine dose deleted',
+      onUndo: () async {
+        await controller.restore(deleted);
+      },
+    );
+    Navigator.pop(context);
   }
 
   @override
@@ -154,97 +151,105 @@ class _MedicineAddScreenState extends ConsumerState<MedicineAddScreen> {
         title: Text(_existing != null ? 'Edit Medication' : 'Add Medication'),
         actions: [
           if (_existing != null)
-            IconButton(
+            TextButton.icon(
               icon: const Icon(Icons.delete_outline),
-              onPressed: _confirmDelete,
+              label: const Text('Delete'),
+              // Urgency colour with the bin and the word (ohStyle colour roles).
+              style: TextButton.styleFrom(
+                foregroundColor: Theme.of(context).colorScheme.error,
+              ),
+              onPressed: _delete,
             ),
         ],
       ),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            TextFormField(
-              controller: _nameController,
-              decoration: const InputDecoration(
-                labelText: 'Medicine name',
-                border: OutlineInputBorder(),
-              ),
-              validator: (v) =>
-                  v == null || v.trim().isEmpty ? 'Name is required' : null,
-              textCapitalization: TextCapitalization.words,
-            ),
-            const SizedBox(height: 16),
-
-            Row(
-              children: [
-                Expanded(
-                  child: TextFormField(
-                    controller: _dosageController,
-                    decoration: const InputDecoration(
-                      labelText: 'Dosage (optional)',
-                      border: OutlineInputBorder(),
-                    ),
-                    keyboardType:
-                        const TextInputType.numberWithOptions(decimal: true),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) return null;
-                      final parsed =
-                          double.tryParse(value.trim().replaceAll(',', '.'));
-                      if (parsed == null || parsed < 0) {
-                        return 'Enter a valid number';
-                      }
-                      return null;
-                    },
-                  ),
+      body: OhPage(
+        padding: EdgeInsets.zero,
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              TextFormField(
+                controller: _nameController,
+                decoration: const InputDecoration(
+                  labelText: 'Medicine name',
+                  border: OutlineInputBorder(),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: DropdownButtonFormField<String>(
-                    decoration: const InputDecoration(
-                      labelText: 'Unit',
-                      border: OutlineInputBorder(),
+                validator: (v) =>
+                    v == null || v.trim().isEmpty ? 'Name is required' : null,
+                textCapitalization: TextCapitalization.words,
+              ),
+              const SizedBox(height: 16),
+
+              Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: _dosageController,
+                      decoration: const InputDecoration(
+                        labelText: 'Dosage (optional)',
+                        border: OutlineInputBorder(),
+                      ),
+                      keyboardType:
+                          const TextInputType.numberWithOptions(decimal: true),
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) return null;
+                        final parsed =
+                            double.tryParse(value.trim().replaceAll(',', '.'));
+                        if (parsed == null || parsed < 0) {
+                          return 'Enter a valid number';
+                        }
+                        return null;
+                      },
                     ),
-                    initialValue: _dosageUnit,
-                    items: _dosageUnits
-                        .map((u) => DropdownMenuItem(value: u, child: Text(u)))
-                        .toList(),
-                    onChanged: (v) => setState(() => _dosageUnit = v),
                   ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: DropdownButtonFormField<String>(
+                      decoration: const InputDecoration(
+                        labelText: 'Unit',
+                        border: OutlineInputBorder(),
+                      ),
+                      initialValue: _dosageUnit,
+                      items: _dosageUnits
+                          .map((u) => DropdownMenuItem(value: u, child: Text(u)))
+                          .toList(),
+                      onChanged: (v) => setState(() => _dosageUnit = v),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              ListTile(
+                title: const Text('Date & Time'),
+                subtitle:
+                    Text(DateFormat('MMM d, yyyy h:mm a').format(_administeredAt)),
+                trailing: const Icon(Icons.access_time),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: BorderSide(color: Theme.of(context).colorScheme.outline),
                 ),
-              ],
-            ),
-            const SizedBox(height: 16),
-
-            ListTile(
-              title: const Text('Date & Time'),
-              subtitle:
-                  Text(DateFormat('MMM d, yyyy h:mm a').format(_administeredAt)),
-              trailing: const Icon(Icons.access_time),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-                side: BorderSide(color: Theme.of(context).colorScheme.outline),
+                onTap: _pickDateTime,
               ),
-              onTap: _pickDateTime,
-            ),
-            const SizedBox(height: 16),
+              const SizedBox(height: 16),
 
-            TextFormField(
-              controller: _notesController,
-              decoration: const InputDecoration(
-                labelText: 'Notes (optional)',
-                border: OutlineInputBorder(),
+              TextFormField(
+                controller: _notesController,
+                decoration: const InputDecoration(
+                  labelText: 'Notes (optional)',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 3,
               ),
-              maxLines: 3,
-            ),
-            const SizedBox(height: 24),
+              const SizedBox(height: 24),
 
-            FilledButton(
-              onPressed: _save,
-              child: const Text('Save'),
-            ),
-          ],
+              FilledButton(
+                onPressed: _save,
+                child: const Text('Save'),
+              ),
+            ],
+          ),
         ),
       ),
     );

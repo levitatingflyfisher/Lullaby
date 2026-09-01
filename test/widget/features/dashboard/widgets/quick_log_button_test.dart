@@ -71,5 +71,53 @@ void main() {
       expect(sizedBox.width, 88.0);
       expect(sizedBox.height, 88.0);
     });
+
+    // Audit rank 10 (item 34 follow-up): the label sat outside the InkWell,
+    // so aiming at the word "Feed" hit nothing.
+    testWidgets('tapping the label word triggers onTap', (tester) async {
+      var tapped = false;
+      await tester.pumpWidget(MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: QuickLogButton(
+              icon: Icons.restaurant,
+              label: 'Feed',
+              color: Colors.green,
+              onTap: () => tapped = true,
+            ),
+          ),
+        ),
+      ));
+
+      await tester.tap(find.text('Feed'));
+      expect(tapped, isTrue);
+    });
+
+    testWidgets('exposes one button named by its label', (tester) async {
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: QuickLogButton(
+              icon: Icons.restaurant,
+              label: 'Feed',
+              color: Colors.green,
+              onTap: () {},
+            ),
+          ),
+        ),
+      ));
+
+      expect(
+          tester.getSemantics(find.text('Feed')),
+          matchesSemantics(
+            label: 'Feed',
+            isButton: true,
+            hasTapAction: true,
+            hasFocusAction: true,
+            isFocusable: true,
+          ));
+      handle.dispose();
+    });
   });
 }

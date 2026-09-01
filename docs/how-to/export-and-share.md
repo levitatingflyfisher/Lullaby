@@ -12,7 +12,8 @@ See [../privacy-model.md](../privacy-model.md) for the full privacy implications
 
 ## Export a doctor summary or raw data (plaintext)
 
-From the export sheet you can produce:
+Open the **Baby** tab → **Summary for the doctor**, then the share icon in
+its top bar. From the export sheet you can produce:
 
 - **A doctor-summary PDF** — recent averages, latest growth with WHO percentiles,
   recent medicines, and administered vaccines, rendered for an appointment.

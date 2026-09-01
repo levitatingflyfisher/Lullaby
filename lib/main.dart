@@ -1,4 +1,3 @@
-import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,15 +5,19 @@ import 'package:sanctuary_backup_ui/sanctuary_backup_ui.dart';
 
 import 'app/app.dart';
 import 'core/providers/database_provider.dart';
-import 'features/home_widget/presentation/controllers/home_widget_controller.dart';
+import 'features/sanctuary_backup/after_restore.dart';
+import 'features/settings/presentation/controllers/theme_controller.dart';
 import 'features/sanctuary_backup/data/backup_serializer.dart';
-import 'features/tracking/presentation/controllers/timer_controller.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Read the theme choice before the first frame, so a Dark choice never
+  // flashes light at launch. Bounded: startup waits at most 300ms.
+  final theme = await readStoredThemePreference(const FlutterSecretStorage());
   runApp(
     ProviderScope(
       overrides: [
+        initialThemePreferenceProvider.overrideWithValue(theme),
         // Encrypted-backup wiring (sanctuary_backup_ui). Lullaby keeps the
         // legacy ghost-backup/v1 AEAD context and the legacy (appDomain=null)
         // key derivation (SANCTUARY-BRIEF §2.1, §2.3) so the OHBK WIRE FORMAT
@@ -36,17 +39,14 @@ void main() {
                 'Restoring will delete all current babies, feedings, sleeps, '
                 'diapers, growth records, medicines, and vaccines, then '
                 'replace them with data from the backup file.',
-            // The Drift watch streams self-refresh after the destructive
-            // restore, but in-memory timers and the home widget can still
-            // reference wiped rows — invalidate them (the old controller's
-            // _refreshAfterRestore).
-            onAfterRestore: (ref) {
-              ref.invalidate(activeTimersProvider);
-              unawaited(
-                  ref.read(homeWidgetControllerProvider).triggerUpdate());
-            },
+            // Timers, the home widget and any pending Undo can still point
+            // at wiped rows; see lullabyAfterRestore.
+            onAfterRestore: lullabyAfterRestore,
           ),
         ),
+        // Keeps Lullaby's recovery words in its own namespace on web, where
+        // every fleet PWA shares one origin's localStorage. No-op on native.
+        appScopedKeyStoreOverride(),
         backupSerializerProvider.overrideWith(
           (ref) => LullabyBackupSerializer(ref.watch(databaseProvider)),
         ),

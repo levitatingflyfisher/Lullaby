@@ -9,6 +9,7 @@ import '../features/settings/presentation/controllers/theme_controller.dart';
 import '../services/home_widget_service.dart';
 import 'router.dart';
 import 'theme/theme.dart';
+import 'undo_host.dart';
 
 class LullabyApp extends ConsumerStatefulWidget {
   const LullabyApp({super.key});
@@ -59,7 +60,7 @@ class _LullabyAppState extends ConsumerState<LullabyApp>
 
   @override
   Widget build(BuildContext context) {
-    final themeMode = ref.watch(themeModeProvider);
+    final themeMode = ref.watch(themeModeProvider).themeMode;
 
     return DynamicColorBuilder(
       builder: (ColorScheme? lightDynamic, ColorScheme? darkDynamic) {
@@ -70,14 +71,10 @@ class _LullabyAppState extends ConsumerState<LullabyApp>
           theme: AppTheme.light(lightDynamic),
           darkTheme: AppTheme.dark(darkDynamic),
           routerConfig: router,
-          builder: (context, child) {
-            final inner = child ?? const SizedBox.shrink();
-            if (MediaQuery.of(context).size.width <= 760) return inner;
-            return ColoredBox(
-              color: Theme.of(context).scaffoldBackgroundColor,
-              child: Center(child: SizedBox(width: 760, child: inner)),
-            );
-          },
+          // Each screen caps its own content with OhPage (640dp) inside its
+          // Scaffold, so bars stay full width and only the content is boxed.
+          builder: (context, child) =>
+              UndoHost(child: child ?? const SizedBox.shrink()),
         );
       },
     );

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openhearth_design/openhearth_design.dart';
 
 import '../../../../app/theme/color_schemes.dart';
 import '../../../../core/constants/app_constants.dart';
@@ -17,6 +18,7 @@ import '../widgets/active_timer_card.dart';
 import '../widgets/daily_summary_strip.dart';
 import '../widgets/quick_log_button.dart';
 import '../widgets/recent_activity_list.dart';
+import '../../../../core/widgets/load_failure.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -39,103 +41,121 @@ class DashboardScreen extends ConsumerWidget {
           ],
         ),
         actions: [
-          IconButton(
+          TextButton.icon(
             icon: const Icon(Icons.settings),
+            label: const Text('Settings'),
             onPressed: () => context.push('/settings'),
           ),
         ],
       ),
-      body: baby.when(
-        data: (activeBaby) {
-          if (activeBaby == null) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.child_care,
-                      size: 64,
-                      color: Theme.of(context).colorScheme.primary),
-                  const SizedBox(height: 16),
-                  Text('Welcome to Lullaby!',
-                      style: Theme.of(context).textTheme.headlineSmall),
-                  const SizedBox(height: 8),
-                  const Text('Add your baby to get started.'),
-                  const SizedBox(height: 24),
-                  FilledButton.icon(
-                    onPressed: () => context.push('/baby/edit'),
-                    icon: const Icon(Icons.add),
-                    label: const Text('Add Baby'),
+      body: OhPage(
+        padding: EdgeInsets.zero,
+        child: baby.when(
+          data: (activeBaby) {
+            if (activeBaby == null) {
+              // Scrolls so the button stays reachable at large text sizes.
+              return Center(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.child_care,
+                          size: 64,
+                          color: Theme.of(context).colorScheme.primary),
+                      const SizedBox(height: 16),
+                      Text('Welcome to Lullaby!',
+                          style: Theme.of(context).textTheme.headlineSmall),
+                      const SizedBox(height: 8),
+                      const Text('Add your baby to get started.'),
+                      const SizedBox(height: 24),
+                      FilledButton.icon(
+                        onPressed: () => context.push('/baby/edit'),
+                        icon: const Icon(Icons.add),
+                        label: const Text('Add Baby'),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+              );
+            }
+
+            final timelineAsync =
+                ref.watch(allEventsProvider(activeBaby.id));
+            final lastFeedAsync =
+                ref.watch(lastFeedingProvider(activeBaby.id));
+
+            return ListView(
+              children: [
+                // Active timers — isolated in their own subtree so the
+                // per-second tick rebuilds only the cards, not the daily summary
+                // or recent-activity list (H10).
+                const _ActiveTimersSection(),
+
+                // Quick log buttons
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      QuickLogButton(
+                        icon: Icons.restaurant,
+                        label: 'Feed',
+                        color: AppColorSchemes.feedColor,
+                        onTap: () => _showFeedingSheet(context),
+                      ),
+                      QuickLogButton(
+                        icon: Icons.bedtime,
+                        label: 'Sleep',
+                        color: AppColorSchemes.sleepColor,
+                        onTap: () => _toggleSleep(context, ref, activeBaby.id),
+                      ),
+                      QuickLogButton(
+                        icon: Icons.baby_changing_station,
+                        label: 'Diaper',
+                        color: AppColorSchemes.diaperColor,
+                        onTap: () => _quickLogDiaper(context, ref),
+                        onLongPress: () => context.push('/diaper'),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Daily summary
+                _DailySummary(
+                  babyId: activeBaby.id,
+                  lastFeedAsync: lastFeedAsync,
+                ),
+                const SizedBox(height: 16),
+
+                // Recent activity
+                timelineAsync.when(
+                  data: (events) => RecentActivityList(
+                    events:
+                        events.take(AppConstants.recentActivityCount).toList(),
+                  ),
+                  loading: () =>
+                      const Center(child: CircularProgressIndicator()),
+                  error: (e, st) => LoadFailure.inline(
+                    what: 'recent activity',
+                    error: e,
+                    stackTrace: st,
+                    onRetry: () => ref.invalidate(allEventsProvider(activeBaby.id)),
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
             );
-          }
-
-          final timelineAsync =
-              ref.watch(allEventsProvider(activeBaby.id));
-          final lastFeedAsync =
-              ref.watch(lastFeedingProvider(activeBaby.id));
-
-          return ListView(
-            children: [
-              // Active timers — isolated in their own subtree so the
-              // per-second tick rebuilds only the cards, not the daily summary
-              // or recent-activity list (H10).
-              const _ActiveTimersSection(),
-
-              // Quick log buttons
-              Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    QuickLogButton(
-                      icon: Icons.restaurant,
-                      label: 'Feed',
-                      color: AppColorSchemes.feedColor,
-                      onTap: () => _showFeedingSheet(context),
-                    ),
-                    QuickLogButton(
-                      icon: Icons.bedtime,
-                      label: 'Sleep',
-                      color: AppColorSchemes.sleepColor,
-                      onTap: () => _toggleSleep(context, ref, activeBaby.id),
-                    ),
-                    QuickLogButton(
-                      icon: Icons.baby_changing_station,
-                      label: 'Diaper',
-                      color: AppColorSchemes.diaperColor,
-                      onTap: () => _quickLogDiaper(context, ref),
-                      onLongPress: () => context.push('/diaper'),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Daily summary
-              _DailySummary(
-                babyId: activeBaby.id,
-                lastFeedAsync: lastFeedAsync,
-              ),
-              const SizedBox(height: 16),
-
-              // Recent activity
-              timelineAsync.when(
-                data: (events) => RecentActivityList(
-                  events:
-                      events.take(AppConstants.recentActivityCount).toList(),
-                ),
-                loading: () =>
-                    const Center(child: CircularProgressIndicator()),
-                error: (e, _) => Center(child: Text('Error: $e')),
-              ),
-              const SizedBox(height: 16),
-            ],
-          );
-        },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: $e')),
+          },
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (e, st) => LoadFailure(
+            what: 'your baby’s details',
+            error: e,
+            stackTrace: st,
+            onRetry: () => ref.invalidate(activeBabyProvider),
+          ),
+        ),
       ),
     );
   }
@@ -152,7 +172,7 @@ class DashboardScreen extends ConsumerWidget {
               title: const Text('Breast'),
               onTap: () {
                 Navigator.pop(context);
-                context.push('/feeding');
+                context.push('/feeding', extra: FeedingType.breast);
               },
             ),
             ListTile(
@@ -160,7 +180,7 @@ class DashboardScreen extends ConsumerWidget {
               title: const Text('Bottle'),
               onTap: () {
                 Navigator.pop(context);
-                context.push('/feeding');
+                context.push('/feeding', extra: FeedingType.bottle);
               },
             ),
             ListTile(
@@ -168,7 +188,7 @@ class DashboardScreen extends ConsumerWidget {
               title: const Text('Solid'),
               onTap: () {
                 Navigator.pop(context);
-                context.push('/feeding');
+                context.push('/feeding', extra: FeedingType.solid);
               },
             ),
           ],

@@ -65,8 +65,12 @@ records on demand:
 ## WHO percentile curves
 
 Growth measurements are plotted against **WHO child-growth standard** percentile
-curves (`who_percentile_data.dart`), separately for boys and girls. These are
-reference curves for orientation, not a diagnosis — see
+curves (`who_percentile_data.dart`), separately for boys and girls. The growth
+screen also says the latest measurement's percentile in words ("about the 60th
+percentile for weight"; "below the 3rd" / "above the 97th" at the extremes), or
+why there is none (no recorded sex, or outside 0–24 months); the growth screen
+and the doctor summary share one calculation (`growth_percentiles.dart`). These
+are reference curves for orientation, not a diagnosis — see
 [limitations.md](limitations.md).
 
 ## Ghost tier and the encrypted backup

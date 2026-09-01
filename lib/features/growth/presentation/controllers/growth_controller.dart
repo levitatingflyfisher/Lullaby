@@ -73,4 +73,11 @@ class GrowthController extends Notifier<AsyncValue<void>> {
     final repo = ref.read(growthRepositoryProvider);
     return repo.deleteGrowthRecord(id);
   }
+
+  /// Puts back exactly the row a delete took (same id and timestamps), for
+  /// the Undo offered after a deliberate delete.
+  Future<Result<void>> restoreRecord(GrowthRecordEntity deleted) async {
+    final repo = ref.read(growthRepositoryProvider);
+    return repo.createGrowthRecord(deleted);
+  }
 }

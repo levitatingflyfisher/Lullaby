@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openhearth_design/openhearth_design.dart';
 
 import '../../../settings/presentation/controllers/active_baby_controller.dart';
 import '../../domain/entities/sleep_log.dart';
 import '../controllers/sleep_controller.dart';
 import '../controllers/timer_controller.dart';
 import '../widgets/timer_display.dart';
+import '../../../../app/undo_host.dart';
+import '../../../../core/errors/result.dart';
 
 class SleepLogScreen extends ConsumerStatefulWidget {
   const SleepLogScreen({super.key});
@@ -105,31 +108,27 @@ class _SleepLogScreenState extends ConsumerState<SleepLogScreen> {
     return _buildCreateMode(context);
   }
 
-  Future<void> _confirmDelete() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete entry?'),
-        content: const Text('This cannot be undone.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: TextButton.styleFrom(
-              foregroundColor: Theme.of(ctx).colorScheme.error,
-            ),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
-    if (confirmed == true && mounted) {
-      await ref.read(sleepControllerProvider.notifier).deleteLog(_existing!.id);
-      if (mounted) Navigator.pop(context);
+  /// A deliberate delete (the form's own Delete action): no question first,
+  /// and an Undo that stays until the parent acts on it (operator ruling Q1).
+  Future<void> _delete() async {
+    final deleted = _existing!;
+    final controller = ref.read(sleepControllerProvider.notifier);
+    final undo = ref.read(undoControllerProvider);
+    final result = await controller.deleteLog(deleted.id);
+    if (!mounted) return;
+    if (result is Err) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Couldn’t delete this sleep. Please try again.')),
+      );
+      return;
     }
+    undo.show(
+      message: 'Sleep deleted',
+      onUndo: () async {
+        await controller.restoreLog(deleted);
+      },
+    );
+    Navigator.pop(context);
   }
 
   Widget _buildEditMode(BuildContext context) {
@@ -137,85 +136,93 @@ class _SleepLogScreenState extends ConsumerState<SleepLogScreen> {
       appBar: AppBar(
         title: const Text('Edit Sleep'),
         actions: [
-          IconButton(
+          TextButton.icon(
             icon: const Icon(Icons.delete_outline),
-            onPressed: _confirmDelete,
+            label: const Text('Delete'),
+            // Urgency colour with the bin and the word (ohStyle colour roles).
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(context).colorScheme.error,
+            ),
+            onPressed: _delete,
           ),
         ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          SegmentedButton<SleepType>(
-            segments: const [
-              ButtonSegment(value: SleepType.nap, label: Text('Nap')),
-              ButtonSegment(value: SleepType.night, label: Text('Night')),
-            ],
-            selected: {_type},
-            onSelectionChanged: (set) => setState(() => _type = set.first),
-          ),
-          const SizedBox(height: 24),
-
-          DropdownButtonFormField<SleepLocation>(
-            decoration: const InputDecoration(
-              labelText: 'Location (optional)',
-              border: OutlineInputBorder(),
+      body: OhPage(
+        padding: EdgeInsets.zero,
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            SegmentedButton<SleepType>(
+              segments: const [
+                ButtonSegment(value: SleepType.nap, label: Text('Nap')),
+                ButtonSegment(value: SleepType.night, label: Text('Night')),
+              ],
+              selected: {_type},
+              onSelectionChanged: (set) => setState(() => _type = set.first),
             ),
-            initialValue: _location,
-            items: SleepLocation.values
-                .map((loc) => DropdownMenuItem(
-                      value: loc,
-                      child: Text(loc.displayName),
-                    ))
-                .toList(),
-            onChanged: (loc) => _location = loc,
-          ),
-          const SizedBox(height: 16),
+            const SizedBox(height: 24),
 
-          ListTile(
-            title: const Text('Start time'),
-            subtitle: Text(_formatDateTime(_startTime)),
-            trailing: const Icon(Icons.schedule),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: BorderSide(color: Theme.of(context).colorScheme.outline),
+            DropdownButtonFormField<SleepLocation>(
+              decoration: const InputDecoration(
+                labelText: 'Location (optional)',
+                border: OutlineInputBorder(),
+              ),
+              initialValue: _location,
+              items: SleepLocation.values
+                  .map((loc) => DropdownMenuItem(
+                        value: loc,
+                        child: Text(loc.displayName),
+                      ))
+                  .toList(),
+              onChanged: (loc) => _location = loc,
             ),
-            onTap: () => _pickDateTime(
-                context, _startTime, (dt) => setState(() => _startTime = dt)),
-          ),
-          const SizedBox(height: 12),
+            const SizedBox(height: 16),
 
-          ListTile(
-            title: const Text('End time (optional)'),
-            subtitle: Text(_endTime != null ? _formatDateTime(_endTime!) : 'Not set'),
-            trailing: const Icon(Icons.schedule),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: BorderSide(color: Theme.of(context).colorScheme.outline),
+            ListTile(
+              title: const Text('Start time'),
+              subtitle: Text(_formatDateTime(_startTime)),
+              trailing: const Icon(Icons.schedule),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: BorderSide(color: Theme.of(context).colorScheme.outline),
+              ),
+              onTap: () => _pickDateTime(
+                  context, _startTime, (dt) => setState(() => _startTime = dt)),
             ),
-            onTap: () => _pickDateTime(
-                context, _endTime ?? _startTime,
-                (dt) => setState(() => _endTime = dt)),
-          ),
-          const SizedBox(height: 16),
+            const SizedBox(height: 12),
 
-          TextField(
-            controller: _notesController,
-            decoration: const InputDecoration(
-              labelText: 'Notes (optional)',
-              border: OutlineInputBorder(),
+            ListTile(
+              title: const Text('End time (optional)'),
+              subtitle: Text(_endTime != null ? _formatDateTime(_endTime!) : 'Not set'),
+              trailing: const Icon(Icons.schedule),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: BorderSide(color: Theme.of(context).colorScheme.outline),
+              ),
+              onTap: () => _pickDateTime(
+                  context, _endTime ?? _startTime,
+                  (dt) => setState(() => _endTime = dt)),
             ),
-            maxLines: 3,
-          ),
-          const SizedBox(height: 24),
+            const SizedBox(height: 16),
 
-          Center(
-            child: FilledButton(
-              onPressed: _saveEdit,
-              child: const Text('Save'),
+            TextField(
+              controller: _notesController,
+              decoration: const InputDecoration(
+                labelText: 'Notes (optional)',
+                border: OutlineInputBorder(),
+              ),
+              maxLines: 3,
             ),
-          ),
-        ],
+            const SizedBox(height: 24),
+
+            Center(
+              child: FilledButton(
+                onPressed: _saveEdit,
+                child: const Text('Save'),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -228,72 +235,75 @@ class _SleepLogScreenState extends ConsumerState<SleepLogScreen> {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Log Sleep')),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          SegmentedButton<SleepType>(
-            segments: const [
-              ButtonSegment(value: SleepType.nap, label: Text('Nap')),
-              ButtonSegment(value: SleepType.night, label: Text('Night')),
-            ],
-            selected: {_type},
-            onSelectionChanged: (set) => setState(() => _type = set.first),
-          ),
-          const SizedBox(height: 24),
-
-          // Location picker
-          DropdownButtonFormField<SleepLocation>(
-            decoration: const InputDecoration(
-              labelText: 'Location (optional)',
-              border: OutlineInputBorder(),
+      body: OhPage(
+        padding: EdgeInsets.zero,
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            SegmentedButton<SleepType>(
+              segments: const [
+                ButtonSegment(value: SleepType.nap, label: Text('Nap')),
+                ButtonSegment(value: SleepType.night, label: Text('Night')),
+              ],
+              selected: {_type},
+              onSelectionChanged: (set) => setState(() => _type = set.first),
             ),
-            initialValue: _location,
-            items: SleepLocation.values
-                .map((loc) => DropdownMenuItem(
-                      value: loc,
-                      child: Text(loc.displayName),
-                    ))
-                .toList(),
-            onChanged: (loc) => _location = loc,
-          ),
-          const SizedBox(height: 24),
+            const SizedBox(height: 24),
 
-          if (sleepTimer != null) ...[
-            Center(child: TimerDisplay(elapsed: sleepTimer.elapsed)),
-            const SizedBox(height: 16),
-            Center(
-              child: FilledButton.icon(
-                onPressed: () {
-                  if (sleepTimer.logId != null) {
-                    ref
-                        .read(sleepControllerProvider.notifier)
-                        .stopSleep(sleepTimer.logId!);
-                  }
-                  Navigator.pop(context);
-                },
-                style: FilledButton.styleFrom(
-                  backgroundColor: Theme.of(context).colorScheme.error,
-                  foregroundColor: Theme.of(context).colorScheme.onError,
+            // Location picker
+            DropdownButtonFormField<SleepLocation>(
+              decoration: const InputDecoration(
+                labelText: 'Location (optional)',
+                border: OutlineInputBorder(),
+              ),
+              initialValue: _location,
+              items: SleepLocation.values
+                  .map((loc) => DropdownMenuItem(
+                        value: loc,
+                        child: Text(loc.displayName),
+                      ))
+                  .toList(),
+              onChanged: (loc) => _location = loc,
+            ),
+            const SizedBox(height: 24),
+
+            if (sleepTimer != null) ...[
+              Center(child: TimerDisplay(elapsed: sleepTimer.elapsed)),
+              const SizedBox(height: 16),
+              Center(
+                child: FilledButton.icon(
+                  onPressed: () {
+                    if (sleepTimer.logId != null) {
+                      ref
+                          .read(sleepControllerProvider.notifier)
+                          .stopSleep(sleepTimer.logId!);
+                    }
+                    Navigator.pop(context);
+                  },
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.error,
+                    foregroundColor: Theme.of(context).colorScheme.onError,
+                  ),
+                  icon: const Icon(Icons.stop),
+                  label: const Text('Stop'),
                 ),
-                icon: const Icon(Icons.stop),
-                label: const Text('Stop'),
               ),
-            ),
-          ] else
-            Center(
-              child: FilledButton.icon(
-                onPressed: baby != null
-                    ? () {
-                        ref
-                            .read(sleepControllerProvider.notifier)
-                            .startSleep(type: _type);
-                      }
-                    : null,
-                icon: const Icon(Icons.play_arrow),
-                label: const Text('Start Sleep'),
+            ] else
+              Center(
+                child: FilledButton.icon(
+                  onPressed: baby != null
+                      ? () {
+                          ref
+                              .read(sleepControllerProvider.notifier)
+                              .startSleep(type: _type);
+                        }
+                      : null,
+                  icon: const Icon(Icons.play_arrow),
+                  label: const Text('Start Sleep'),
+                ),
               ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }

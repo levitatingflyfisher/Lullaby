@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openhearth_design/openhearth_design.dart';
 
 import '../../../settings/presentation/controllers/active_baby_controller.dart';
+import '../../../../core/widgets/load_failure.dart';
 
 class HealthScreen extends ConsumerWidget {
   const HealthScreen({super.key});
@@ -12,42 +14,50 @@ class HealthScreen extends ConsumerWidget {
     final baby = ref.watch(activeBabyProvider);
 
     return Scaffold(
-      body: baby.when(
-        data: (activeBaby) {
-          if (activeBaby == null) {
-            return const Center(child: Text('No baby selected'));
-          }
+      body: OhPage(
+        padding: EdgeInsets.zero,
+        child: baby.when(
+          data: (activeBaby) {
+            if (activeBaby == null) {
+              return const Center(child: Text('No baby selected'));
+            }
 
-          return ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(bottom: 16, top: 8),
-                child: Text(
-                  activeBaby.name,
-                  style: Theme.of(context).textTheme.headlineSmall,
+            return ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 16, top: 8),
+                  child: Text(
+                    activeBaby.name,
+                    style: Theme.of(context).textTheme.headlineSmall,
+                  ),
                 ),
-              ),
-              _HealthCard(
-                icon: Icons.medication,
-                title: 'Medications',
-                subtitle: 'Track medicines and dosages',
-                color: Colors.blue,
-                onTap: () => context.push('/health/medicine'),
-              ),
-              const SizedBox(height: 16),
-              _HealthCard(
-                icon: Icons.vaccines,
-                title: 'Vaccines',
-                subtitle: 'Track vaccinations and schedule',
-                color: Colors.green,
-                onTap: () => context.push('/health/vaccines'),
-              ),
-            ],
-          );
-        },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: $e')),
+                _HealthCard(
+                  icon: Icons.medication,
+                  title: 'Medications',
+                  subtitle: 'Track medicines and dosages',
+                  color: Colors.blue,
+                  onTap: () => context.push('/health/medicine'),
+                ),
+                const SizedBox(height: 16),
+                _HealthCard(
+                  icon: Icons.vaccines,
+                  title: 'Vaccines',
+                  subtitle: 'Track vaccinations and schedule',
+                  color: Colors.green,
+                  onTap: () => context.push('/health/vaccines'),
+                ),
+              ],
+            );
+          },
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (e, st) => LoadFailure(
+            what: 'your baby’s details',
+            error: e,
+            stackTrace: st,
+            onRetry: () => ref.invalidate(activeBabyProvider),
+          ),
+        ),
       ),
     );
   }

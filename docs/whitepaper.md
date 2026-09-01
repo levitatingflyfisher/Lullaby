@@ -99,7 +99,7 @@ an abstract repository), `data` (a Drift-backed implementation), and
 `presentation` (screens + Riverpod controllers), with dependencies pointing
 inward so the trackers are testable against an in-memory database. One SQLite
 schema runs on native platforms and in the browser (WebAssembly SQLite) behind a
-single conditional connection. Roughly 450 tests, including golden tests for
+single conditional connection. Roughly 570 tests, including golden tests for
 layout, gate every change through CI. Full detail:
 [architecture/OVERVIEW.md](architecture/OVERVIEW.md) and the
 [ADRs](adr/).

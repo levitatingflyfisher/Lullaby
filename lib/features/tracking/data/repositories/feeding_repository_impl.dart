@@ -81,6 +81,16 @@ class FeedingRepositoryImpl implements FeedingRepository {
   }
 
   @override
+  Future<Result<void>> updateNotes(String id, String? notes) async {
+    try {
+      await _dao.updateNotes(id, notes, DateTime.now());
+      return const Success(null);
+    } catch (e) {
+      return Err(DatabaseFailure(e.toString()));
+    }
+  }
+
+  @override
   Future<Result<void>> deleteFeeding(String id) async {
     try {
       await _dao.deleteFeeding(id);

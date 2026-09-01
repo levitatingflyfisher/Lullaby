@@ -15,6 +15,10 @@ import 'package:lullaby/core/providers/repository_providers.dart';
 // Minimal fakes — only getInRange and getAllForBaby need returning non-null.
 class _FakeFeedingRepo implements FeedingRepository {
   @override
+  Future<Result<void>> updateNotes(String id, String? notes) async =>
+      const Success(null);
+
+  @override
   Future<Result<List<FeedingLogEntity>>> getInRange(
           String babyId, DateTime start, DateTime end) async =>
       const Success([]);

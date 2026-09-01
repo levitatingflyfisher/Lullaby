@@ -109,6 +109,15 @@ class DiaperController extends Notifier<AsyncValue<void>> {
     return result;
   }
 
+  /// Puts back exactly the row a delete took (same id and timestamps), for
+  /// the Undo offered after a deliberate delete.
+  Future<Result<void>> restoreLog(DiaperLogEntity deleted) async {
+    final repo = ref.read(diaperRepositoryProvider);
+    final result = await repo.createDiaper(deleted);
+    unawaited(ref.read(homeWidgetControllerProvider).triggerUpdate());
+    return result;
+  }
+
   Future<int> getTodayDiaperCount(String babyId) async {
     final repo = ref.read(diaperRepositoryProvider);
     final now = DateTime.now();

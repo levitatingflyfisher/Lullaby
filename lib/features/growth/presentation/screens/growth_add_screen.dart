@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:openhearth_design/openhearth_design.dart';
 
 import '../../../../core/errors/result.dart';
 import '../../../settings/presentation/controllers/active_baby_controller.dart';
 import '../../domain/entities/growth_record.dart';
 import '../controllers/growth_controller.dart';
+import '../../../../app/undo_host.dart';
 
 class GrowthAddScreen extends ConsumerStatefulWidget {
   const GrowthAddScreen({super.key});
@@ -67,116 +69,124 @@ class _GrowthAddScreenState extends ConsumerState<GrowthAddScreen> {
         title: Text(_existing != null ? 'Edit Measurement' : 'Add Measurement'),
         actions: [
           if (_existing != null)
-            IconButton(
+            TextButton.icon(
               icon: const Icon(Icons.delete_outline),
-              onPressed: _confirmDelete,
+              label: const Text('Delete'),
+              // Urgency colour with the bin and the word (ohStyle colour roles).
+              style: TextButton.styleFrom(
+                foregroundColor: Theme.of(context).colorScheme.error,
+              ),
+              onPressed: _delete,
             ),
         ],
       ),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            // Date picker
-            ListTile(
-              leading: const Icon(Icons.calendar_today),
-              title: const Text('Date'),
-              subtitle: Text(DateFormat.yMMMd().format(_measuredAt)),
-              onTap: _pickDate,
-            ),
-            const Divider(),
-            const SizedBox(height: 16),
-
-            // Weight
-            TextFormField(
-              controller: _weightController,
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
-              decoration: const InputDecoration(
-                labelText: 'Weight (kg)',
-                prefixIcon: Icon(Icons.monitor_weight_outlined),
-                border: OutlineInputBorder(),
+      body: OhPage(
+        padding: EdgeInsets.zero,
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              // Date picker
+              ListTile(
+                leading: const Icon(Icons.calendar_today),
+                title: const Text('Date'),
+                subtitle: Text(DateFormat.yMMMd().format(_measuredAt)),
+                onTap: _pickDate,
               ),
-              validator: (v) {
-                if (v != null && v.isNotEmpty) {
-                  final val = double.tryParse(v);
-                  if (val == null || val <= 0 || val > 30) {
-                    return 'Enter a valid weight (0-30 kg)';
+              const Divider(),
+              const SizedBox(height: 16),
+
+              // Weight
+              TextFormField(
+                controller: _weightController,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(
+                  labelText: 'Weight (kg)',
+                  prefixIcon: Icon(Icons.monitor_weight_outlined),
+                  border: OutlineInputBorder(),
+                ),
+                validator: (v) {
+                  if (v != null && v.isNotEmpty) {
+                    final val = double.tryParse(v);
+                    if (val == null || val <= 0 || val > 30) {
+                      return 'Enter a valid weight (0-30 kg)';
+                    }
                   }
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 16),
-
-            // Height
-            TextFormField(
-              controller: _heightController,
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
-              decoration: const InputDecoration(
-                labelText: 'Height (cm)',
-                prefixIcon: Icon(Icons.height),
-                border: OutlineInputBorder(),
+                  return null;
+                },
               ),
-              validator: (v) {
-                if (v != null && v.isNotEmpty) {
-                  final val = double.tryParse(v);
-                  if (val == null || val <= 0 || val > 120) {
-                    return 'Enter a valid height (0-120 cm)';
+              const SizedBox(height: 16),
+
+              // Height
+              TextFormField(
+                controller: _heightController,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(
+                  labelText: 'Height (cm)',
+                  prefixIcon: Icon(Icons.height),
+                  border: OutlineInputBorder(),
+                ),
+                validator: (v) {
+                  if (v != null && v.isNotEmpty) {
+                    final val = double.tryParse(v);
+                    if (val == null || val <= 0 || val > 120) {
+                      return 'Enter a valid height (0-120 cm)';
+                    }
                   }
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 16),
-
-            // Head circumference
-            TextFormField(
-              controller: _headController,
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
-              decoration: const InputDecoration(
-                labelText: 'Head circumference (cm)',
-                prefixIcon: Icon(Icons.circle_outlined),
-                border: OutlineInputBorder(),
+                  return null;
+                },
               ),
-              validator: (v) {
-                if (v != null && v.isNotEmpty) {
-                  final val = double.tryParse(v);
-                  if (val == null || val <= 0 || val > 60) {
-                    return 'Enter a valid measurement (0-60 cm)';
+              const SizedBox(height: 16),
+
+              // Head circumference
+              TextFormField(
+                controller: _headController,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(
+                  labelText: 'Head circumference (cm)',
+                  prefixIcon: Icon(Icons.circle_outlined),
+                  border: OutlineInputBorder(),
+                ),
+                validator: (v) {
+                  if (v != null && v.isNotEmpty) {
+                    final val = double.tryParse(v);
+                    if (val == null || val <= 0 || val > 60) {
+                      return 'Enter a valid measurement (0-60 cm)';
+                    }
                   }
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 16),
-
-            // Notes
-            TextFormField(
-              controller: _notesController,
-              maxLines: 2,
-              decoration: const InputDecoration(
-                labelText: 'Notes (optional)',
-                prefixIcon: Icon(Icons.notes),
-                border: OutlineInputBorder(),
+                  return null;
+                },
               ),
-            ),
-            const SizedBox(height: 24),
+              const SizedBox(height: 16),
 
-            FilledButton(
-              onPressed: controllerState.isLoading ? null : _save,
-              child: controllerState.isLoading
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('Save'),
-            ),
-          ],
+              // Notes
+              TextFormField(
+                controller: _notesController,
+                maxLines: 2,
+                decoration: const InputDecoration(
+                  labelText: 'Notes (optional)',
+                  prefixIcon: Icon(Icons.notes),
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              FilledButton(
+                onPressed: controllerState.isLoading ? null : _save,
+                child: controllerState.isLoading
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Save'),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -251,32 +261,26 @@ class _GrowthAddScreenState extends ConsumerState<GrowthAddScreen> {
     });
   }
 
-  Future<void> _confirmDelete() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete measurement?'),
-        content: const Text('This cannot be undone.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: TextButton.styleFrom(
-              foregroundColor: Theme.of(ctx).colorScheme.error,
-            ),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
-    if (confirmed == true && mounted) {
-      await ref
-          .read(growthControllerProvider.notifier)
-          .deleteRecord(_existing!.id);
-      if (mounted) Navigator.pop(context);
+  /// A deliberate delete (the form's own Delete action): no question first,
+  /// and an Undo that stays until the parent acts on it (operator ruling Q1).
+  Future<void> _delete() async {
+    final deleted = _existing!;
+    final controller = ref.read(growthControllerProvider.notifier);
+    final undo = ref.read(undoControllerProvider);
+    final result = await controller.deleteRecord(deleted.id);
+    if (!mounted) return;
+    if (result is Err) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Couldn’t delete this measurement. Please try again.')),
+      );
+      return;
     }
+    undo.show(
+      message: 'Measurement deleted',
+      onUndo: () async {
+        await controller.restoreRecord(deleted);
+      },
+    );
+    Navigator.pop(context);
   }
 }

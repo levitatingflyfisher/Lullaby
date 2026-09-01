@@ -22,7 +22,7 @@ this reflects the code as read, verified by the test suite where noted.
 | **CSV export** | ✅ Shipped | summary & raw CSV, **formula-injection-safe** (tested) |
 | **Multiple babies** | ✅ Shipped | profiles + switcher; one active at a time |
 | **Home-screen widget** | ✅ Shipped | baby name + last feed/sleep/diaper + active timer |
-| **Dark mode / Material 3** | ✅ Shipped | system + manual; dynamic colour on Android 12+ |
+| **Dark mode / Material 3** | ✅ Shipped | follow phone (default), Light or Dark from the top bar, remembered across launches; dynamic colour on Android 12+ |
 | **Encrypted backup / restore** | ✅ Shipped | app-side flow + OHBK format real & tested, real audited crypto (`sanctuary_auth_core`, sibling path dep); pre-rewire (CI-stub-era) exports are a known, documented incompatibility — see [limitations.md](../limitations.md#known-incompatibility-pre-rewire-stub-era-backups) |
 | **Seed-phrase recovery** | ✅ Shipped | generate/confirm/derive-key flow on the real `sanctuary_auth_core` module |
 | **Multi-device sync** | ❌ Not shipped | no server; sharing = carry an encrypted backup |

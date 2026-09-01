@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openhearth_design/openhearth_design.dart';
 
 import '../../domain/entities/diaper_log.dart';
 import '../controllers/diaper_controller.dart';
 import '../widgets/diaper_type_selector.dart';
+import '../../../../app/undo_host.dart';
+import '../../../../core/errors/result.dart';
 
 class DiaperLogScreen extends ConsumerStatefulWidget {
   const DiaperLogScreen({super.key});
@@ -73,33 +76,27 @@ class _DiaperLogScreenState extends ConsumerState<DiaperLogScreen> {
     return '$date $hour:$min';
   }
 
-  Future<void> _confirmDelete() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete entry?'),
-        content: const Text('This cannot be undone.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: TextButton.styleFrom(
-              foregroundColor: Theme.of(ctx).colorScheme.error,
-            ),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
-    if (confirmed == true && mounted) {
-      await ref
-          .read(diaperControllerProvider.notifier)
-          .deleteLog(_existing!.id);
-      if (mounted) Navigator.pop(context);
+  /// A deliberate delete (the form's own Delete action): no question first,
+  /// and an Undo that stays until the parent acts on it (operator ruling Q1).
+  Future<void> _delete() async {
+    final deleted = _existing!;
+    final controller = ref.read(diaperControllerProvider.notifier);
+    final undo = ref.read(undoControllerProvider);
+    final result = await controller.deleteLog(deleted.id);
+    if (!mounted) return;
+    if (result is Err) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Couldn’t delete this diaper change. Please try again.')),
+      );
+      return;
     }
+    undo.show(
+      message: 'Diaper change deleted',
+      onUndo: () async {
+        await controller.restoreLog(deleted);
+      },
+    );
+    Navigator.pop(context);
   }
 
   @override
@@ -111,96 +108,104 @@ class _DiaperLogScreenState extends ConsumerState<DiaperLogScreen> {
         title: Text(isEdit ? 'Edit Diaper' : 'Log Diaper'),
         actions: [
           if (isEdit)
-            IconButton(
+            TextButton.icon(
               icon: const Icon(Icons.delete_outline),
-              onPressed: _confirmDelete,
+              label: const Text('Delete'),
+              // Urgency colour with the bin and the word (ohStyle colour roles).
+              style: TextButton.styleFrom(
+                foregroundColor: Theme.of(context).colorScheme.error,
+              ),
+              onPressed: _delete,
             ),
         ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          DiaperTypeSelector(
-            selected: _type,
-            onChanged: (type) => setState(() {
-              _type = type;
-              if (type == DiaperType.wet) _color = null;
-            }),
-          ),
-          const SizedBox(height: 24),
+      body: OhPage(
+        padding: EdgeInsets.zero,
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            DiaperTypeSelector(
+              selected: _type,
+              onChanged: (type) => setState(() {
+                _type = type;
+                if (type == DiaperType.wet) _color = null;
+              }),
+            ),
+            const SizedBox(height: 24),
 
-          if (_type == DiaperType.dirty || _type == DiaperType.both) ...[
-            DropdownButtonFormField<StoolColor>(
+            if (_type == DiaperType.dirty || _type == DiaperType.both) ...[
+              DropdownButtonFormField<StoolColor>(
+                decoration: const InputDecoration(
+                  labelText: 'Color (optional)',
+                  border: OutlineInputBorder(),
+                ),
+                initialValue: _color,
+                items: StoolColor.values
+                    .map((c) => DropdownMenuItem(
+                          value: c,
+                          child: Text(c.displayName),
+                        ))
+                    .toList(),
+                onChanged: (c) => _color = c,
+              ),
+              const SizedBox(height: 16),
+            ],
+
+            if (isEdit) ...[
+              ListTile(
+                title: const Text('Time'),
+                subtitle: Text(_formatDateTime(_time)),
+                trailing: const Icon(Icons.schedule),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: BorderSide(color: Theme.of(context).colorScheme.outline),
+                ),
+                onTap: () => _pickDateTime(context),
+              ),
+              const SizedBox(height: 16),
+            ],
+
+            TextField(
+              controller: _notesController,
               decoration: const InputDecoration(
-                labelText: 'Color (optional)',
+                labelText: 'Notes (optional)',
                 border: OutlineInputBorder(),
               ),
-              initialValue: _color,
-              items: StoolColor.values
-                  .map((c) => DropdownMenuItem(
-                        value: c,
-                        child: Text(c.displayName),
-                      ))
-                  .toList(),
-              onChanged: (c) => _color = c,
+              maxLines: 3,
             ),
-            const SizedBox(height: 16),
-          ],
+            const SizedBox(height: 24),
 
-          if (isEdit) ...[
-            ListTile(
-              title: const Text('Time'),
-              subtitle: Text(_formatDateTime(_time)),
-              trailing: const Icon(Icons.schedule),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-                side: BorderSide(color: Theme.of(context).colorScheme.outline),
+            Center(
+              child: FilledButton(
+                onPressed: () {
+                  if (isEdit) {
+                    final updated = _existing!.copyWith(
+                      type: _type,
+                      color: () => _color,
+                      time: _time,
+                      notes: _notesController.text.isNotEmpty
+                          ? () => _notesController.text
+                          : () => null,
+                    );
+                    ref
+                        .read(diaperControllerProvider.notifier)
+                        .updateLog(updated);
+                  } else {
+                    ref.read(diaperControllerProvider.notifier).logDiaper(
+                          type: _type,
+                          color: _color,
+                          notes: _notesController.text.isNotEmpty
+                              ? _notesController.text
+                              : null,
+                        );
+                  }
+                  Navigator.pop(context);
+                },
+                child: const Text('Save'),
               ),
-              onTap: () => _pickDateTime(context),
             ),
-            const SizedBox(height: 16),
           ],
-
-          TextField(
-            controller: _notesController,
-            decoration: const InputDecoration(
-              labelText: 'Notes (optional)',
-              border: OutlineInputBorder(),
-            ),
-            maxLines: 3,
-          ),
-          const SizedBox(height: 24),
-
-          Center(
-            child: FilledButton(
-              onPressed: () {
-                if (isEdit) {
-                  final updated = _existing!.copyWith(
-                    type: _type,
-                    color: () => _color,
-                    time: _time,
-                    notes: _notesController.text.isNotEmpty
-                        ? () => _notesController.text
-                        : () => null,
-                  );
-                  ref
-                      .read(diaperControllerProvider.notifier)
-                      .updateLog(updated);
-                } else {
-                  ref.read(diaperControllerProvider.notifier).logDiaper(
-                        type: _type,
-                        color: _color,
-                        notes: _notesController.text.isNotEmpty
-                            ? _notesController.text
-                            : null,
-                      );
-                }
-                Navigator.pop(context);
-              },
-              child: const Text('Save'),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

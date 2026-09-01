@@ -34,7 +34,7 @@ this repo? Start with [AGENTS.md](AGENTS.md).
 - **Timeline** — scrollable activity history with filter chips
 - **Doctor summary** — at-a-glance summary ready to share at appointments
 - **Multiple babies** — manage profiles for more than one child
-- **Dark mode** — system theme + manual override
+- **Dark mode** — follow the phone, or choose Light or Dark from the top bar; the choice is remembered
 - **Material 3** — dynamic colour theming on supported Android devices
 
 ---

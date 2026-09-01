@@ -34,7 +34,10 @@ class FeedingController extends Notifier<AsyncValue<void>> {
   @override
   AsyncValue<void> build() => const AsyncData(null);
 
-  Future<FeedingLogEntity?> startBreastFeeding(BreastSide side) async {
+  /// Opens a breast feed. [notes] typed before Start go on the new row
+  /// (doet-02), so they survive even if the feed is stopped from Home.
+  Future<FeedingLogEntity?> startBreastFeeding(BreastSide side,
+      {String? notes}) async {
     // Guard against double-taps creating duplicate open sessions (H6).
     if (state is AsyncLoading) return null;
     final baby = ref.read(activeBabyProvider).valueOrNull;
@@ -59,6 +62,7 @@ class FeedingController extends Notifier<AsyncValue<void>> {
       type: FeedingType.breast,
       startTime: now,
       side: side,
+      notes: notes,
       createdAt: now,
       modifiedAt: now,
     );
@@ -98,7 +102,10 @@ class FeedingController extends Notifier<AsyncValue<void>> {
     ));
   }
 
-  Future<Result<void>> stopBreastFeeding(String logId) async {
+  /// Closes the in-progress breast feed. [notes], when given, replace the
+  /// feed's notes (the form's Stop button passes what the parent typed,
+  /// doet-02); null leaves existing notes alone (the timer card's Stop).
+  Future<Result<void>> stopBreastFeeding(String logId, {String? notes}) async {
     final repo = ref.read(feedingRepositoryProvider);
     final timers = ref.read(activeTimersProvider.notifier);
     final babyId = ref.read(activeBabyProvider).valueOrNull?.id ?? '';
@@ -115,6 +122,7 @@ class FeedingController extends Notifier<AsyncValue<void>> {
         final updated = existing.copyWith(
           endTime: () => now,
           durationMinutes: () => minutes < 0 ? 0 : minutes, // clamp (M12)
+          notes: notes != null ? () => notes : null,
           modifiedAt: now,
         );
         final updateResult = await repo.updateFeeding(updated);
@@ -133,6 +141,14 @@ class FeedingController extends Notifier<AsyncValue<void>> {
     if (stale != null) timers.stopTimer(stale.id);
     return const Err(NotFoundFailure('Feeding log not found'));
   }
+
+  /// Saves notes onto a feed that is still open, as the parent types, so
+  /// they survive a Stop from the Home timer card (which passes no notes).
+  /// Only the notes column is written. Empty text clears the notes.
+  Future<Result<void>> saveFeedNotes(String logId, String notes) =>
+      ref
+          .read(feedingRepositoryProvider)
+          .updateNotes(logId, notes.isEmpty ? null : notes);
 
   Future<Result<void>> logBottleFeeding({
     required double amountMl,
@@ -197,6 +213,15 @@ class FeedingController extends Notifier<AsyncValue<void>> {
   Future<Result<void>> deleteLog(String id) async {
     final repo = ref.read(feedingRepositoryProvider);
     final result = await repo.deleteFeeding(id);
+    unawaited(ref.read(homeWidgetControllerProvider).triggerUpdate());
+    return result;
+  }
+
+  /// Puts back exactly the row a delete took (same id and timestamps), for
+  /// the Undo offered after a deliberate delete.
+  Future<Result<void>> restoreLog(FeedingLogEntity deleted) async {
+    final repo = ref.read(feedingRepositoryProvider);
+    final result = await repo.createFeeding(deleted);
     unawaited(ref.read(homeWidgetControllerProvider).triggerUpdate());
     return result;
   }

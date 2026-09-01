@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../app/theme/color_schemes.dart';
 
 class DailySummaryStrip extends StatelessWidget {
   const DailySummaryStrip({
@@ -14,27 +15,29 @@ class DailySummaryStrip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
+    // A Wrap, not a horizontal scroller: the three facts a parent opens the
+    // app to read must all be on screen together at any width and text
+    // scale, flowing onto a second line rather than off the edge (dmmt-07).
+    return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Row(
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 4,
         children: [
-          _SummaryChip(
+          DailySummaryPill(
             icon: Icons.restaurant,
             label: 'Last feed: $lastFeedTime',
-            color: const Color(0xFF4CAF50),
+            color: AppColorSchemes.feedColor,
           ),
-          const SizedBox(width: 8),
-          _SummaryChip(
+          DailySummaryPill(
             icon: Icons.bedtime,
             label: 'Sleep: $sleepDuration',
-            color: const Color(0xFF5C6BC0),
+            color: AppColorSchemes.sleepColor,
           ),
-          const SizedBox(width: 8),
-          _SummaryChip(
+          DailySummaryPill(
             icon: Icons.baby_changing_station,
             label: 'Diapers: $diaperCount',
-            color: const Color(0xFFFFA726),
+            color: AppColorSchemes.diaperColor,
           ),
         ],
       ),
@@ -42,8 +45,14 @@ class DailySummaryStrip extends StatelessWidget {
   }
 }
 
-class _SummaryChip extends StatelessWidget {
-  const _SummaryChip({
+/// One fact in the strip, drawn like an outlined chip but free to wrap.
+///
+/// Not a Chip: a Chip fixes its height to one line, so at text scale 2.0
+/// "Last feed: 2 hours ago" was sheared off inside it. This pill lets the
+/// label run onto a second line instead.
+class DailySummaryPill extends StatelessWidget {
+  const DailySummaryPill({
+    super.key,
     required this.icon,
     required this.label,
     required this.color,
@@ -55,10 +64,23 @@ class _SummaryChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Chip(
-      avatar: Icon(icon, size: 18, color: color),
-      label: Text(label),
-      visualDensity: VisualDensity.compact,
+    final theme = Theme.of(context);
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 18, color: color),
+            const SizedBox(width: 8),
+            Flexible(child: Text(label, style: theme.textTheme.labelLarge)),
+          ],
+        ),
+      ),
     );
   }
 }

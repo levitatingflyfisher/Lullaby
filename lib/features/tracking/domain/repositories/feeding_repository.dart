@@ -11,5 +11,7 @@ abstract class FeedingRepository {
       String babyId, DateTime start, DateTime end);
   Future<Result<void>> createFeeding(FeedingLogEntity log);
   Future<Result<void>> updateFeeding(FeedingLogEntity log);
+  /// Replaces only a feed's notes; every other column is left as stored.
+  Future<Result<void>> updateNotes(String id, String? notes);
   Future<Result<void>> deleteFeeding(String id);
 }

@@ -3,13 +3,16 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../domain/entities/daily_summary.dart';
+import '../../../../app/theme/color_schemes.dart';
 
 class SleepPatternChart extends StatelessWidget {
   const SleepPatternChart({super.key, required this.summaries});
 
   final List<DailySummary> summaries;
 
-  static const _nightColor = Color(0xFF3949AB); // darker indigo
+  // The same sleep colour as everywhere else (it had drifted to its own
+  // darker indigo).
+  static const _nightColor = AppColorSchemes.sleepColor;
 
   @override
   Widget build(BuildContext context) {

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lullaby/app/theme/theme.dart';
 
 /// Named logical device sizes for responsive golden sweeps.
 ///
@@ -43,7 +44,9 @@ Future<void> goldenAtSizes(
       tester.view.physicalSize = size.value;
       await tester.pumpWidget(MaterialApp(
         debugShowCheckedModeBanner: false,
-        theme: theme,
+        // The app's own light theme unless a test asks otherwise, so the
+        // goldens show Lullaby's real colours and the fleet's type.
+        theme: theme ?? AppTheme.light(),
         builder: (BuildContext context, Widget? child) => MediaQuery(
           data: MediaQuery.of(context)
               .copyWith(textScaler: TextScaler.linear(scale)),

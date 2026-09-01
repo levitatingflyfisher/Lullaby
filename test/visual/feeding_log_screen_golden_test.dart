@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lullaby/app/theme/theme.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lullaby/core/errors/result.dart';
 import 'package:lullaby/features/tracking/presentation/controllers/feeding_controller.dart';
@@ -47,6 +48,7 @@ void main() {
       // the helper's outer MaterialApp supplies the MediaQuery text scale.
       child: MaterialApp.router(
         debugShowCheckedModeBanner: false,
+        theme: AppTheme.light(),
         routerConfig: router,
       ),
     );

@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:openhearth_design/openhearth_design.dart';
 
 import '../../../../../features/settings/presentation/controllers/active_baby_controller.dart';
 import '../../domain/entities/vaccine_record.dart';
 import '../controllers/vaccine_controller.dart';
+import '../../../../../core/widgets/load_failure.dart';
 
 class VaccineScreen extends ConsumerStatefulWidget {
   const VaccineScreen({super.key});
@@ -49,45 +51,58 @@ class _VaccineScreenState extends ConsumerState<VaccineScreen>
         onPressed: () => context.push('/health/vaccines/add'),
         child: const Icon(Icons.add),
       ),
-      body: baby.when(
-        data: (activeBaby) {
-          if (activeBaby == null) {
-            return const Center(child: Text('No baby selected'));
-          }
+      body: OhPage(
+        padding: EdgeInsets.zero,
+        child: baby.when(
+          data: (activeBaby) {
+            if (activeBaby == null) {
+              return const Center(child: Text('No baby selected'));
+            }
 
-          final allAsync = ref.watch(vaccineRecordsProvider(activeBaby.id));
+            final allAsync = ref.watch(vaccineRecordsProvider(activeBaby.id));
 
-          return allAsync.when(
-            data: (all) {
-              final upcoming = all
-                  .where((v) =>
-                      v.scheduledDate != null && v.administeredDate == null)
-                  .toList();
-              final given =
-                  all.where((v) => v.administeredDate != null).toList();
+            return allAsync.when(
+              data: (all) {
+                final upcoming = all
+                    .where((v) =>
+                        v.scheduledDate != null && v.administeredDate == null)
+                    .toList();
+                final given =
+                    all.where((v) => v.administeredDate != null).toList();
 
-              return TabBarView(
-                controller: _tabController,
-                children: [
-                  _VaccineList(
-                    records: upcoming,
-                    emptyMessage: 'No upcoming vaccines',
-                    showMarkAdministered: true,
-                  ),
-                  _VaccineList(
-                    records: given,
-                    emptyMessage: 'No vaccines recorded',
-                    showMarkAdministered: false,
-                  ),
-                ],
-              );
-            },
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, _) => Center(child: Text('Error: $e')),
-          );
-        },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: $e')),
+                return TabBarView(
+                  controller: _tabController,
+                  children: [
+                    _VaccineList(
+                      records: upcoming,
+                      emptyMessage: 'No upcoming vaccines',
+                      showMarkAdministered: true,
+                    ),
+                    _VaccineList(
+                      records: given,
+                      emptyMessage: 'No vaccines recorded',
+                      showMarkAdministered: false,
+                    ),
+                  ],
+                );
+              },
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (e, st) => LoadFailure(
+                what: 'vaccines',
+                error: e,
+                stackTrace: st,
+                onRetry: () => ref.invalidate(vaccineRecordsProvider(activeBaby.id)),
+              ),
+            );
+          },
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (e, st) => LoadFailure(
+            what: 'your baby’s details',
+            error: e,
+            stackTrace: st,
+            onRetry: () => ref.invalidate(activeBabyProvider),
+          ),
+        ),
       ),
     );
   }
@@ -139,25 +154,13 @@ class _VaccineList extends ConsumerWidget {
             color: Theme.of(context).colorScheme.error,
             child: const Icon(Icons.delete, color: Colors.white),
           ),
-          confirmDismiss: (_) => showDialog<bool>(
-            context: context,
-            builder: (ctx) => AlertDialog(
-              title: const Text('Delete vaccine record?'),
-              content: const Text('This cannot be undone.'),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(ctx, false),
-                  child: const Text('Cancel'),
-                ),
-                TextButton(
-                  onPressed: () => Navigator.pop(ctx, true),
-                  style: TextButton.styleFrom(
-                    foregroundColor: Theme.of(ctx).colorScheme.error,
-                  ),
-                  child: const Text('Delete'),
-                ),
-              ],
-            ),
+          // A swipe is an easy gesture, so it asks first (operator ruling Q1).
+          confirmDismiss: (_) => showOhConfirm(
+            context,
+            title: 'Delete the ${record.vaccineName} record?',
+            message: 'It will be gone from the vaccine list for good.',
+            confirmLabel: 'Delete record',
+            destructive: true,
           ),
           onDismissed: (_) {
             ref.read(vaccineControllerProvider.notifier).delete(record.id);

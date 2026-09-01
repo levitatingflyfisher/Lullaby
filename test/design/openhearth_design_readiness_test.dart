@@ -11,8 +11,9 @@
 //  2. Lullaby's signature periwinkle seed is NOT a canonical token — it is
 //     app-local identity and must stay defined in lib/app/theme.
 //
-// Lullaby's type ladder and Material-You dynamic-color hook are protected
-// identity and are deliberately not exercised here.
+// Lullaby's Material-You dynamic-color hook is protected identity and is not
+// exercised here. Its type is the fleet's (OhTypography.materialTextTheme),
+// pinned in test/unit/app/theme/app_type_theme_test.dart.
 
 import 'dart:ui';
 
@@ -22,8 +23,8 @@ import 'package:openhearth_design/openhearth_design.dart';
 void main() {
   group('openhearth_design conformance readiness', () {
     test('canonical brand tokens resolve with the agreed values', () {
-      expect(OhColors.hearth500, const Color(0xFFA85040));
-      expect(OhColors.hearth400, const Color(0xFFC47B6A));
+      expect(OhColors.hearth500, const Color(0xFF9E4D2C));
+      expect(OhColors.hearth400, const Color(0xFFCD8366));
       expect(OhColors.sage500, const Color(0xFF5E9478));
       expect(OhColors.sage400, const Color(0xFF7BAF96));
       expect(OhColors.linen50, const Color(0xFFFBF8F4));

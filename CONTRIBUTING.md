@@ -98,7 +98,9 @@ Lullaby uses clean architecture with a feature-based folder layout. When adding 
 
 4. Register the new repository provider in `lib/core/providers/repository_providers.dart`.
 
-5. Add routes in `lib/app/router.dart`.
+5. Add routes in `lib/app/router.dart`, and give each one a visible, labelled
+   way in from an existing screen. `test/unit/app/router_doors_test.dart` fails
+   on a route that nothing navigates to.
 
 See the existing `tracking` or `growth` features for a complete reference implementation.
 

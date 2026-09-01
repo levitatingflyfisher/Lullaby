@@ -8,6 +8,7 @@ import 'baby_photo.dart';
 import '../controllers/baby_controller.dart';
 import '../../../home_widget/presentation/controllers/home_widget_controller.dart';
 import '../../../settings/presentation/controllers/active_baby_controller.dart';
+import '../../../../core/widgets/load_failure.dart';
 
 class BabySwitcherSheet extends ConsumerWidget {
   const BabySwitcherSheet({super.key});
@@ -69,9 +70,11 @@ class BabySwitcherSheet extends ConsumerWidget {
               padding: EdgeInsets.all(24),
               child: CircularProgressIndicator(),
             ),
-            error: (e, _) => Padding(
-              padding: const EdgeInsets.all(24),
-              child: Text('Error: $e'),
+            error: (e, st) => LoadFailure.inline(
+              what: 'the list of babies',
+              error: e,
+              stackTrace: st,
+              onRetry: () => ref.invalidate(babyListProvider),
             ),
           ),
           const Divider(height: 1),

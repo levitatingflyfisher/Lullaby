@@ -60,6 +60,16 @@ class FeedingDao extends DatabaseAccessor<AppDatabase> with _$FeedingDaoMixin {
   Future<bool> updateFeeding(FeedingLogsCompanion log) =>
       update(feedingLogs).replace(log);
 
+  /// Writes only the notes column, so a note saved while a feed is open can
+  /// never overwrite an endTime written by a Stop that landed first.
+  Future<int> updateNotes(String id, String? notes, DateTime modifiedAt) =>
+      (update(feedingLogs)..where((f) => f.id.equals(id))).write(
+        FeedingLogsCompanion(
+          notes: Value(notes),
+          modifiedAt: Value(modifiedAt),
+        ),
+      );
+
   Future<int> deleteFeeding(String id) =>
       (delete(feedingLogs)..where((f) => f.id.equals(id))).go();
 }

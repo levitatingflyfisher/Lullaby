@@ -84,7 +84,7 @@ void main() {
       expect(find.text('Set up encrypted backup'), findsNothing);
     });
 
-    testWidgets('shows Reset identity when key exists', (tester) async {
+    testWidgets('shows Remove recovery words when key exists', (tester) async {
       when(() => store.readMnemonic()).thenAnswer(
         (_) async => 'abandon abandon abandon abandon abandon abandon '
             'abandon abandon abandon abandon abandon about',
@@ -97,7 +97,7 @@ void main() {
       );
       await tester.pumpAndSettle(const Duration(seconds: 5));
 
-      expect(find.text('Reset identity'), findsOneWidget);
+      expect(find.text('Remove recovery words'), findsOneWidget);
     });
 
     testWidgets('shows section header', (tester) async {
@@ -110,7 +110,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Encrypted Backup'), findsOneWidget);
+      expect(find.text('Backup'), findsOneWidget);
     });
   });
 }

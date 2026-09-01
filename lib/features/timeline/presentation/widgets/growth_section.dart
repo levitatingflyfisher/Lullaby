@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../growth/presentation/controllers/growth_controller.dart';
 import '../../../growth/presentation/widgets/growth_curve_chart.dart';
 import '../../../settings/presentation/controllers/active_baby_controller.dart';
+import '../../../../core/widgets/load_failure.dart';
 
 class GrowthSection extends ConsumerWidget {
   const GrowthSection({super.key});
@@ -45,19 +46,40 @@ class GrowthSection extends ConsumerWidget {
                   dateOfBirth: baby.dateOfBirth,
                   gender: baby.gender,
                 ),
-              TextButton.icon(
-                onPressed: () => context.push('/growth/add'),
-                icon: const Icon(Icons.add),
-                label: const Text('Add measurement'),
+              Wrap(
+                alignment: WrapAlignment.center,
+                spacing: 8,
+                children: [
+                  TextButton.icon(
+                    onPressed: () => context.push('/growth'),
+                    icon: const Icon(Icons.show_chart),
+                    label: const Text('Growth details'),
+                  ),
+                  TextButton.icon(
+                    onPressed: () => context.push('/growth/add'),
+                    icon: const Icon(Icons.add),
+                    label: const Text('Add measurement'),
+                  ),
+                ],
               ),
             ],
           ),
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, _) => Center(child: Text('Error: $e')),
+          error: (e, st) => LoadFailure.inline(
+            what: 'the growth chart',
+            error: e,
+            stackTrace: st,
+            onRetry: () => ref.invalidate(growthRecordsProvider(baby.id)),
+          ),
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(child: Text('Error: $e')),
+      error: (e, st) => LoadFailure.inline(
+        what: 'the growth chart',
+        error: e,
+        stackTrace: st,
+        onRetry: () => ref.invalidate(activeBabyProvider),
+      ),
     );
   }
 }

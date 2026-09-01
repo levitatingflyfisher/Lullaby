@@ -7,6 +7,11 @@ import 'package:lullaby/features/doctor/presentation/screens/doctor_summary_scre
 import 'package:lullaby/features/growth/domain/entities/growth_record.dart';
 import 'package:lullaby/features/settings/presentation/controllers/active_baby_controller.dart';
 
+ButtonStyleButton shareButton(WidgetTester tester) =>
+    tester.widget<ButtonStyleButton>(find.ancestor(
+        of: find.byIcon(Icons.share),
+        matching: find.byWidgetPredicate((w) => w is ButtonStyleButton)));
+
 void main() {
   final fakeBaby = BabyEntity(
     id: 'baby1',
@@ -222,7 +227,7 @@ void main() {
       expect(find.textContaining('(P'), findsNothing);
       expect(
         find.text(
-          "WHO percentiles need a recorded sex; add one in the baby's "
+          "WHO percentiles need a recorded sex; add one in the baby’s "
           'profile to see them.',
         ),
         findsOneWidget,
@@ -235,10 +240,22 @@ void main() {
       await tester.pump();
       await tester.pump();
 
-      final iconButton = tester.widget<IconButton>(
-        find.widgetWithIcon(IconButton, Icons.share),
-      );
-      expect(iconButton.onPressed, isNull);
+      expect(shareButton(tester).onPressed, isNull);
+    });
+
+    // Operator ruling: top-bar actions are icon plus short label.
+    testWidgets('share action carries a "Share" label beside its icon',
+        (tester) async {
+      await tester.pumpWidget(buildSubject(baby: fakeBaby, summary: fakeSummary));
+      await tester.pump();
+      await tester.pump();
+
+      final button = find.ancestor(
+          of: find.text('Share'),
+          matching: find.byWidgetPredicate((w) => w is TextButton));
+      expect(button, findsOneWidget);
+      expect(find.descendant(of: button, matching: find.byIcon(Icons.share)),
+          findsOneWidget);
     });
   });
 }

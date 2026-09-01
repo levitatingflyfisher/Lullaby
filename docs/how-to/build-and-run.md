@@ -52,7 +52,7 @@ flutter run -d <device-id>      # run in debug
 
 ```bash
 flutter analyze                 # must be clean
-flutter test                    # ~450 tests; must be green
+flutter test                    # ~570 tests; must be green
 ```
 
 ## Build a release artifact

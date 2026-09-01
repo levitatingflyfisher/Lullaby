@@ -8,6 +8,7 @@ import '../../../stats/presentation/widgets/feeding_trend_chart.dart';
 import '../../../stats/presentation/widgets/period_selector.dart';
 import '../../../stats/presentation/widgets/sleep_pattern_chart.dart';
 import 'growth_section.dart';
+import '../../../../core/widgets/load_failure.dart';
 
 class ChartsTab extends ConsumerWidget {
   const ChartsTab({super.key});
@@ -48,14 +49,24 @@ class ChartsTab extends ConsumerWidget {
                 ),
                 loading: () =>
                     const Center(child: CircularProgressIndicator()),
-                error: (e, _) => Center(child: Text('Error: $e')),
+                error: (e, st) => LoadFailure(
+                  what: 'the charts',
+                  error: e,
+                  stackTrace: st,
+                  onRetry: () => ref.invalidate(dailySummariesProvider(baby.id)),
+                ),
               ),
             ),
           ],
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(child: Text('Error: $e')),
+      error: (e, st) => LoadFailure(
+        what: 'your baby’s details',
+        error: e,
+        stackTrace: st,
+        onRetry: () => ref.invalidate(activeBabyProvider),
+      ),
     );
   }
 }

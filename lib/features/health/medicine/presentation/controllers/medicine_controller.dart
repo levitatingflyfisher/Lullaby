@@ -67,4 +67,11 @@ class MedicineController extends Notifier<AsyncValue<void>> {
     final repo = ref.read(medicineRepositoryProvider);
     return repo.deleteMedicineLog(id);
   }
+
+  /// Puts back exactly the row a delete took (same id and timestamps), for
+  /// the Undo offered after a deliberate delete.
+  Future<Result<void>> restore(MedicineLogEntity deleted) async {
+    final repo = ref.read(medicineRepositoryProvider);
+    return repo.createMedicineLog(deleted);
+  }
 }

@@ -53,5 +53,28 @@ void main() {
       expect(find.text('No growth measurements yet'), findsNothing);
       expect(find.text('Add measurement'), findsNothing);
     });
+
+    testWidgets('a failed load says so in words, never the exception',
+        (tester) async {
+      await tester.pumpWidget(ProviderScope(
+        overrides: [
+          activeBabyProvider.overrideWith((ref) => Stream.value(fakeBaby)),
+          growthRecordsProvider.overrideWith((ref, babyId) =>
+              Stream<List<GrowthRecordEntity>>.error(
+                  StateError('SqliteException(1): no such table'))),
+        ],
+        child: MaterialApp(
+          home: Scaffold(
+            body: ListView(children: const [GrowthSection()]),
+          ),
+        ),
+      ));
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(find.textContaining('Couldn’t load the growth chart'),
+          findsOneWidget);
+      expect(find.textContaining('SqliteException'), findsNothing);
+    });
   });
 }

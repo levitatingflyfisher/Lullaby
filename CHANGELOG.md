@@ -10,6 +10,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Deleting a record from its edit form happens at once and offers an Undo
+  bar that stays until you act on it; it survives the form closing.
+  Swiping a growth, medicine or vaccine row away asks first, with a
+  button that names what goes.
+- Theme toggle in the top bar (Follow phone / Light / Dark), two taps
+  from every tab, remembered across launches.
+- A dismissible "finish setup" line at the top of Settings while encrypted
+  backup is not set up.
+- Fleet checks C9 (every route has a door), C10 (no raw error text), C11
+  (top-bar actions carry words), C12 (accent is not the error red) and the
+  360dp x 1.3 primary-action sweep.
 - Fleet conformance suite (`oh_fleet_conformance` dev dependency +
   `test/fleet_conformance_test.dart`): Lullaby's recorded posture is
   tokens-tier style, ZERO Android permissions (the empty set is an
@@ -24,6 +35,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   workflow covers every path dependency the pubspec declares.
 
 ### Changed
+- Text is set in the fleet's type (ohStyle's Lora and Nunito, bundled, on
+  the shared type ladder) instead of the platform font; C7 now guards the
+  glyphs.
+- The running-timer card stacks its label, clock and STOP when they do
+  not fit on one row, so the clock never breaks a digit per line.
+- Tabs grow with the text size, so their labels are no longer cropped.
+- The stored theme is read before the first frame, so a Dark choice does
+  not flash light at launch.
+- A screen that fails to load says what did not load and offers Try again,
+  instead of printing the exception.
+- Content is capped at 640dp and centred on tablets and in the browser
+  (OhPage); app bars span the window. This replaces the fixed 760px box
+  around the whole app.
+- Top-bar actions are icon plus word: Settings, Edit, Delete.
+- The growth chart spaces its axis labels by their measured size and
+  prints the unit once, so labels no longer overlap at large text.
+- The Home summary labels wrap onto a second line instead of being cut
+  off inside a chip at large text.
+- Calendar opens from the top of Timeline → Events, so the Timeline title
+  stays whole at large text.
+- First run scrolls, so Add Baby stays reachable at large text.
+- On web, recovery words are kept under Lullaby's own names rather than
+  shared with other fleet apps in the same browser.
+- Category colours live in one table; the sleep chart uses the sleep colour.
 - `test/flutter_test_config.dart` re-synced to the fleet-canonical
   variant: per-family font-load isolation (one font family failing to
   load no longer aborts the families after it). The success path is

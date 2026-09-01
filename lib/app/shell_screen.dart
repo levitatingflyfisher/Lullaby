@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openhearth_design/openhearth_design.dart';
 
 import '../features/babies/presentation/widgets/baby_switcher_sheet.dart';
 import '../features/settings/presentation/controllers/active_baby_controller.dart';
+import '../features/settings/presentation/controllers/theme_controller.dart';
 
 class ShellScreen extends ConsumerWidget {
   const ShellScreen({super.key, required this.navigationShell});
@@ -21,12 +23,24 @@ class ShellScreen extends ConsumerWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(activeBaby?.name ?? 'Lullaby'),
+              Flexible(
+                child: Text(
+                  activeBaby?.name ?? 'Lullaby',
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
               const SizedBox(width: 4),
               const Icon(Icons.expand_more, size: 20),
             ],
           ),
         ),
+        actions: [
+          // Theme is two taps from every tab (operator ruling Q3).
+          OhThemeToggle(
+            value: ref.watch(themeModeProvider),
+            onChanged: ref.read(themeModeProvider.notifier).set,
+          ),
+        ],
       ),
       body: navigationShell,
       bottomNavigationBar: NavigationBar(

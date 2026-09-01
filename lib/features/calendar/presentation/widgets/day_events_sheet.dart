@@ -7,6 +7,7 @@ import '../../../timeline/presentation/widgets/timeline_entry_card.dart';
 import '../../../tracking/domain/entities/feeding_log.dart';
 import '../../../tracking/domain/entities/sleep_log.dart';
 import '../controllers/calendar_controller.dart';
+import '../../../../core/widgets/load_failure.dart';
 
 class DayEventsSheet extends ConsumerWidget {
   const DayEventsSheet({
@@ -69,7 +70,12 @@ class DayEventsSheet extends ConsumerWidget {
                 },
                 loading: () =>
                     const Center(child: CircularProgressIndicator()),
-                error: (e, _) => Center(child: Text('Error: $e')),
+                error: (e, st) => LoadFailure.inline(
+                  what: 'this day’s events',
+                  error: e,
+                  stackTrace: st,
+                  onRetry: () => ref.invalidate(dayDetailProvider((babyId: babyId, day: day))),
+                ),
               ),
             ),
           ],

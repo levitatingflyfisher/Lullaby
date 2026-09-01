@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../presentation/controllers/timeline_controller.dart';
+import '../../../../app/theme/color_schemes.dart';
 
 class TimelineEntryCard extends StatelessWidget {
   const TimelineEntryCard({super.key, required this.event});
@@ -13,13 +14,13 @@ class TimelineEntryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final (icon, color) = switch (event.type) {
-      TimelineEventType.feeding => (Icons.restaurant, const Color(0xFF4CAF50)),
-      TimelineEventType.sleep => (Icons.bedtime, const Color(0xFF5C6BC0)),
+      TimelineEventType.feeding => (Icons.restaurant, AppColorSchemes.feedColor),
+      TimelineEventType.sleep => (Icons.bedtime, AppColorSchemes.sleepColor),
       TimelineEventType.diaper =>
-        (Icons.baby_changing_station, const Color(0xFFFFA726)),
-      TimelineEventType.growth => (Icons.straighten, const Color(0xFF26A69A)),
-      TimelineEventType.medicine => (Icons.medication, const Color(0xFF7E57C2)),
-      TimelineEventType.vaccine => (Icons.vaccines, const Color(0xFF42A5F5)),
+        (Icons.baby_changing_station, AppColorSchemes.diaperColor),
+      TimelineEventType.growth => (Icons.straighten, AppColorSchemes.growthColor),
+      TimelineEventType.medicine => (Icons.medication, AppColorSchemes.medicineColor),
+      TimelineEventType.vaccine => (Icons.vaccines, AppColorSchemes.vaccineColor),
     };
 
     return Card(

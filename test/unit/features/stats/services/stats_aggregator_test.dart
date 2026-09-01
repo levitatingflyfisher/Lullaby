@@ -11,6 +11,10 @@ import 'package:lullaby/features/tracking/domain/repositories/sleep_repository.d
 // ── Fake repository implementations ──────────────────────────────────────────
 
 class FakeFeedingRepo implements FeedingRepository {
+  @override
+  Future<Result<void>> updateNotes(String id, String? notes) async =>
+      const Success(null);
+
   FakeFeedingRepo(this._logs);
   final List<FeedingLogEntity> _logs;
 

@@ -54,6 +54,7 @@ put it in `docs/tutorials/`.
 - **[Vision](../VISION.md)** — the one idea, the design commitments, the honest scorecard.
 - **[Architecture overview](architecture/OVERVIEW.md)** — the layers + diagrams.
 - **[Architecture Decision Records](adr/)** — why each load-bearing choice was made.
+- **[Personas](explanation/personas.md)**: who agents play when they test the UI, with scenarios.
 - **[Concepts](concepts.md)** — the domain model, the Clean-Architecture layering,
   local-first data flow.
 - **[Privacy model](privacy-model.md)** — what leaves the device, when, and how to
