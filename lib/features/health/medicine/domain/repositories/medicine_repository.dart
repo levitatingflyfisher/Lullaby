@@ -9,4 +9,6 @@ abstract class MedicineRepository {
   Future<Result<void>> createMedicineLog(MedicineLogEntity log);
   Future<Result<void>> updateMedicineLog(MedicineLogEntity log);
   Future<Result<void>> deleteMedicineLog(String id);
+  /// Undo a delete of [log] (the kernel's Restore when sync is on).
+  Future<Result<void>> restoreMedicineLog(MedicineLogEntity log);
 }

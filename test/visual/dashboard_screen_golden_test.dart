@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lullaby/features/babies/domain/entities/baby.dart';
 import 'package:lullaby/features/dashboard/presentation/screens/dashboard_screen.dart';
+import 'package:lullaby/features/handoff/domain/handoff_note.dart';
+import 'package:lullaby/features/handoff/presentation/handoff_card.dart';
 import 'package:lullaby/features/settings/presentation/controllers/active_baby_controller.dart';
 import 'package:lullaby/features/timeline/presentation/controllers/timeline_controller.dart';
 import 'package:lullaby/features/tracking/presentation/controllers/diaper_controller.dart';
@@ -80,6 +82,15 @@ void main() {
               .overrideWith(() => _FakeActiveTimers(<ActiveTimer>[activeTimer])),
           sleepControllerProvider.overrideWith(() => _FakeSleepController()),
           diaperControllerProvider.overrideWith(() => _FakeDiaperController()),
+          recentHandoffNotesProvider.overrideWith((ref, babyId) => Stream.value([
+                HandoffNote(
+                  id: 'n1',
+                  babyId: babyId,
+                  text: 'Last feed 9:50, left side. Fussy after.',
+                  author: 'Mei’s phone',
+                  writtenAt: DateTime(2025, 6, 15, 9, 55),
+                ),
+              ])),
         ],
         child: const DashboardScreen(),
       ),

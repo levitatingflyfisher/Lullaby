@@ -14,4 +14,6 @@ abstract class FeedingRepository {
   /// Replaces only a feed's notes; every other column is left as stored.
   Future<Result<void>> updateNotes(String id, String? notes);
   Future<Result<void>> deleteFeeding(String id);
+  /// Undo a delete of [log] (the kernel's Restore when sync is on).
+  Future<Result<void>> restoreFeeding(FeedingLogEntity log);
 }

@@ -5,11 +5,19 @@ import '../../../../../core/errors/result.dart';
 import '../../../../../services/database/database.dart' as db;
 import '../../../../../services/database/daos/medicine_dao.dart';
 import '../../domain/entities/medicine_log.dart';
+import '../../../../sync/data/lullaby_records.dart';
+import '../../../../sync/data/record_projection.dart';
+import '../../../../sync/data/record_writer.dart';
 import '../../domain/repositories/medicine_repository.dart';
 
 class MedicineRepositoryImpl implements MedicineRepository {
-  MedicineRepositoryImpl(this._dao);
+  MedicineRepositoryImpl(this._dao, [RecordWriter? writer])
+      : _writer = writer ?? DirectRecordWriter(RecordProjection(_dao.attachedDatabase));
   final MedicineDao _dao;
+
+  /// Every change goes through here, so it reaches the household's log when
+  /// sync is on (docs/adr/0007-household-sync.md). Reads stay on [_dao].
+  final RecordWriter _writer;
 
   @override
   Future<Result<List<MedicineLogEntity>>> getAllForBaby(String babyId) async {
@@ -39,7 +47,7 @@ class MedicineRepositoryImpl implements MedicineRepository {
   @override
   Future<Result<void>> createMedicineLog(MedicineLogEntity log) async {
     try {
-      await _dao.insertMedicineLog(_toCompanion(log));
+      await _writer.put(medicineSpec, log.id, companionFields(medicineSpec, _toCompanion(log)));
       return const Success(null);
     } catch (e) {
       return Err(DatabaseFailure(e.toString()));
@@ -49,7 +57,7 @@ class MedicineRepositoryImpl implements MedicineRepository {
   @override
   Future<Result<void>> updateMedicineLog(MedicineLogEntity log) async {
     try {
-      await _dao.updateMedicineLog(_toCompanion(log));
+      await _writer.update(medicineSpec, log.id, companionFields(medicineSpec, _toCompanion(log)));
       return const Success(null);
     } catch (e) {
       return Err(DatabaseFailure(e.toString()));
@@ -59,7 +67,17 @@ class MedicineRepositoryImpl implements MedicineRepository {
   @override
   Future<Result<void>> deleteMedicineLog(String id) async {
     try {
-      await _dao.deleteMedicineLog(id);
+      await _writer.delete(medicineSpec, id);
+      return const Success(null);
+    } catch (e) {
+      return Err(DatabaseFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Result<void>> restoreMedicineLog(MedicineLogEntity log) async {
+    try {
+      await _writer.restore(medicineSpec, log.id, companionFields(medicineSpec, _toCompanion(log)));
       return const Success(null);
     } catch (e) {
       return Err(DatabaseFailure(e.toString()));

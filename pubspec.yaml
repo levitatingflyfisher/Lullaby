@@ -28,12 +28,19 @@ dependencies:
   share_plus: ^10.0.0
   home_widget: ^0.7.0
   file_picker: ^8.0.0
+  # The same-Wi-Fi sync code as a QR the other phone's camera opens (native
+  # only: the web build never imports it). Fleet precedent: Reckon, StillLife.
+  qr_flutter: ^4.1.0
   openhearth_design:
     path: ../ohStyle/openhearth_design
   sanctuary_auth_core:
     path: ../packages/sanctuary_auth_core
   sanctuary_backup_ui:
     path: ../packages/sanctuary_backup_ui
+  # Two-phone sync (docs/adr/0012-household-sync.md): the shared Rust kernel,
+  # by sibling path like the packages above.
+  hearth_sync:
+    path: ../hearthSync/flutter/hearth_sync
 
 dev_dependencies:
   flutter_test:
@@ -46,6 +53,9 @@ dev_dependencies:
   flutter_launcher_icons: ^0.14.3
   oh_fleet_conformance:
     path: ../packages/oh_fleet_conformance
+  # The two-phone tests load the host build of the sync kernel's bridge
+  # (ExternalLibrary); same exact pin as hearth_sync.
+  flutter_rust_bridge: 2.13.0
 
 flutter_launcher_icons:
   android: true

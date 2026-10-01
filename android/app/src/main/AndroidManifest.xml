@@ -1,4 +1,12 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Two-phone sync only (docs/adr/0007-household-sync.md): the app talks
+         to the household relay a parent chose and, while a parent shows or
+         types a same-Wi-Fi code, to the other phone on the local network
+         (hearthSync ADR 0014), and to nothing else. With sync off (the
+         default) no request is made and no port is opened;
+         household_sync_off_test pins that the kernel, relay client and
+         Wi-Fi listener are never even created. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
         android:label="lullaby"
         android:name="${applicationName}"
@@ -32,6 +40,8 @@
                 <category android:name="android.intent.category.DEFAULT"/>
                 <category android:name="android.intent.category.BROWSABLE"/>
                 <data android:scheme="lullaby" android:host="dashboard"/>
+                <!-- The same-Wi-Fi code's QR link: the camera opens Type a code. -->
+                <data android:scheme="lullaby" android:host="sync"/>
             </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.

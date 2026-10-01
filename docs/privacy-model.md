@@ -8,8 +8,10 @@ claims rather than take them on faith.
 ## The one-line promise
 
 **Nothing leaves your device unless you deliberately send it.** There is no
-account, no server, no analytics, no ads. In normal use the app makes zero network
-calls.
+account, no server of record, no analytics, no ads. Until a parent turns on sync,
+the app makes zero network calls; after that it talks only to the relay the
+household chose and, while a parent shows or types a same-Wi-Fi code, to the
+other phone on the local network, and sends either only sealed changes.
 
 ## Where data lives
 
@@ -32,6 +34,7 @@ Data leaves only by an action the parent takes on purpose:
 |---|---|---|---|
 | **CSV / PDF export** | The chosen records (e.g. a doctor summary) | **Plaintext.** CSV cells are formula-injection-neutralized ([safety rules](reference/csv-export-safety.md)) | Wherever the parent sends it via the OS share sheet |
 | **Encrypted backup (`.ohbk`)** | All records, serialized to JSON | **Encrypted** with ChaCha20-Poly1305 under a key derived from the parent's seed phrase ([format](reference/backup-format.md)) | A file the parent saves and carries |
+| **Sync** (opt-in, [ADR-0007](adr/0007-household-sync.md)) | Every record change and handoff note, as signed ops | **Sealed** (XChaCha20-Poly1305) under a key derived from the household's 12 words; signed by this phone's own device key | The household relay the parent typed in, and on to the household's other phones; or, with a same-Wi-Fi code, straight to the other phone (plain HTTP on the local network, every message MAC'd under a key only a holder of the words can compute; hearthSync ADR 0014) |
 | **Home-screen widget** | Baby name + "last feed/sleep/diaper" times + active timer | None (it's a glanceable widget) | Stays **on-device**, but rendered on the home/lock screen by the OS launcher |
 
 Two notes:
@@ -40,6 +43,19 @@ Two notes:
 - The **home widget** never transmits anything, but it does surface the baby's
   name and recent activity on the home screen, which is visible to anyone looking
   at the phone.
+
+## What the relay sees, and what it cannot
+
+With sync on, the relay stores sealed envelopes and passes them on. It cannot
+open them: the key comes from the 12 words, which never leave the phones. It
+does see: the household's channel id (derived from the words, not secret), each
+phone's public device key and **its name in plain text** (the name typed when
+sync was turned on, so "Phone 2" reveals less than a person's name), how many
+changes and how big, and when. Photos never sync (`photo_path` is a file on one phone).
+"Forget this phone" stops future updates; no design can recall what another
+phone already holds. Every phone stores the words (fleet sync decision 2), so
+the phrase gate on Forget protects against a child's tap, not against a holder
+of the words.
 
 ## The backup crypto trust boundary
 
@@ -62,7 +78,8 @@ and [ADR-0004](adr/0004-encrypted-backup-seed-phrase.md).
   network egress, no identifiers, no telemetry.
 - **A leaked backup file** — it is AEAD-encrypted; without the seed phrase it is
   opaque, and tampering fails the authentication tag on restore.
-- **A server breach** — there is no server.
+- **A server breach** — there is no server of record. A breached relay yields
+  sealed envelopes and metadata (sizes, timing, device keys), no content.
 
 **Out of scope (what it does *not* protect against):**
 - **A compromised or malware-infected device** — malware with app-data access can
@@ -79,16 +96,20 @@ and [ADR-0004](adr/0004-encrypted-backup-seed-phrase.md).
 Don't trust the prose — check it:
 
 ```bash
-# 1. No network / analytics / BaaS dependency in the build:
-grep -niE 'firebase|supabase|analytics|sentry|crashlytics|dio|http|amplitude|mixpanel' pubspec.yaml
+# 1. No analytics / BaaS dependency in the build (hearth_sync is the sync kernel):
+grep -niE 'firebase|supabase|analytics|sentry|crashlytics|dio|amplitude|mixpanel' pubspec.yaml
 
-# 2. No HTTP client or tracking call anywhere in the app source:
-grep -rniE 'http(s)?://|HttpClient|package:http|firebase|analytics' lib/
+# 2. No HTTP client or tracking call in the app's own source; the only network
+#    code is hearth_sync's relay client, reached through HouseholdSync:
+grep -rniE 'HttpClient|package:http|firebase|analytics' lib/
 
-# 3. Android permissions — confirm no unexpected network/location grants:
+# 3. Android permissions: INTERNET (for sync) and nothing else:
 cat android/app/src/main/AndroidManifest.xml
+
+# 4. With sync off, no kernel, no relay client and no Wi-Fi listener are ever created:
+flutter test test/unit/features/sync/household_sync_off_test.dart
 ```
 
-The first two commands should return nothing app-relevant; the manifest should
-not request tracking, location, or background-network permissions. Privacy that
-you can grep for is the point.
+The first two should return nothing app-relevant; the manifest should ask for
+`INTERNET` only (conformance C4 pins that set). Privacy that you can grep for
+is the point.

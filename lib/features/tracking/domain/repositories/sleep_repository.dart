@@ -12,4 +12,6 @@ abstract class SleepRepository {
   Future<Result<void>> createSleep(SleepLogEntity log);
   Future<Result<void>> updateSleep(SleepLogEntity log);
   Future<Result<void>> deleteSleep(String id);
+  /// Undo a delete of [log] (the kernel's Restore when sync is on).
+  Future<Result<void>> restoreSleep(SleepLogEntity log);
 }

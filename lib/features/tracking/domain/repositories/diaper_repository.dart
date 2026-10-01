@@ -14,4 +14,6 @@ abstract class DiaperRepository {
   Future<Result<void>> createDiaper(DiaperLogEntity log);
   Future<Result<void>> updateDiaper(DiaperLogEntity log);
   Future<Result<void>> deleteDiaper(String id);
+  /// Undo a delete of [log] (the kernel's Restore when sync is on).
+  Future<Result<void>> restoreDiaper(DiaperLogEntity log);
 }

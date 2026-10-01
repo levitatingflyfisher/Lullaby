@@ -9,4 +9,6 @@ abstract class VaccineRepository {
   Future<Result<void>> createVaccineRecord(VaccineRecordEntity record);
   Future<Result<void>> updateVaccineRecord(VaccineRecordEntity record);
   Future<Result<void>> deleteVaccineRecord(String id);
+  /// Undo a delete of [record] (the kernel's Restore when sync is on).
+  Future<Result<void>> restoreVaccineRecord(VaccineRecordEntity record);
 }

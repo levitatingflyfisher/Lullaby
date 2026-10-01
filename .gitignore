@@ -60,3 +60,6 @@ test/visual/failures/
 # committed copy is only a copy that can go stale:
 # `dart run build_runner build --delete-conflicting-outputs`
 *.g.dart
+
+# The sync kernel's WASM, built by tool/build_web.sh (ADR-0007).
+/web/pkg/

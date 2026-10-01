@@ -40,6 +40,11 @@ class BabyDao extends DatabaseAccessor<AppDatabase> with _$BabyDaoMixin {
         await into(babies).insert(baby.copyWith(isActive: const Value(true)));
       });
 
+  /// The photo is a file on this phone, so its path never syncs.
+  Future<int> setPhotoPath(String id, String? path) =>
+      (update(babies)..where((b) => b.id.equals(id)))
+          .write(BabiesCompanion(photoPath: Value(path)));
+
   Future<bool> updateBaby(BabiesCompanion baby) =>
       update(babies).replace(baby);
 

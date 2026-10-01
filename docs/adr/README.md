@@ -18,6 +18,7 @@ whether you're fixing a mistake or unknowingly reopening a settled trade-off.
 | [0004](0004-encrypted-backup-seed-phrase.md) | Encrypted backup via a seed phrase; crypto lives out-of-repo | Accepted |
 | [0005](0005-csv-injection-safety.md) | Neutralize spreadsheet formula injection in the CSV export | Accepted |
 | [0006](0006-native-and-web-drift-connection.md) | One schema, native + web, via a conditional Drift connection | Accepted |
+| [0007](0007-household-sync.md) | Two-phone sync through hearthSync: what syncs, and how it merges | Accepted (amends 0001) |
 
 ## Writing a new one
 

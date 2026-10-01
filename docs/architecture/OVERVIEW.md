@@ -12,9 +12,17 @@ layers — **presentation** (Flutter screens/widgets + Riverpod controllers),
 **domain** (plain-Dart entities + an abstract repository interface), and **data**
 (a repository implementation backed by a Drift DAO). All persistence is an
 on-device **SQLite** database via **Drift**. State flows through **Riverpod**
-providers. Nothing talks to a network in normal operation; the only ways data
-leaves the device are an explicit **export** (CSV/PDF) or an **encrypted backup
-file**.
+providers. With sync off (the default) nothing talks to a network; data leaves
+the device by an explicit **export** (CSV/PDF), an **encrypted backup file**, or,
+once a parent turns it on, **sync** (sealed changes through a household relay).
+
+**Writes go through one seam.** Repositories read through their Drift DAO but
+write through a `RecordWriter` (`lib/features/sync/data/`). With sync off it
+writes Drift directly; with sync on, `HouseholdSync` opens the hearthSync kernel
+over the same database (`DriftPersist`) and every write becomes an op in the
+household's log, with Drift filled from the kernel's changes by
+`RecordProjection`, in the kernel's own transaction. What syncs and how it
+merges: [ADR-0007](../adr/0007-household-sync.md).
 
 ## The layers (the single most important picture)
 
@@ -113,7 +121,7 @@ enabled per-connection (`PRAGMA foreign_keys = ON` in `database.dart`'s
 `beforeOpen`), and hot per-baby/time-ordered queries are backed by explicit
 indices created on migration.
 
-## Encrypted backup (the only "sync-shaped" path)
+## Encrypted backup
 
 Backup is **serialize → encrypt → write a file**; restore is the reverse, and it
 is **destructive** (wipe-then-insert in one transaction). There is no server.
@@ -167,8 +175,9 @@ real, audited crypto. See [ADR-0004](../adr/0004-encrypted-backup-seed-phrase.md
 Breaking one is a design regression, not a feature. (See [VISION.md](../VISION.md)
 and [`docs/adr/`](../adr/).)
 
-1. **No network in normal operation.** No account, telemetry, or ad SDK. Data
-   leaves only by explicit export or encrypted backup.
+1. **No network unless sync is on.** No account, telemetry, or ad SDK. Data
+   leaves only by explicit export, encrypted backup, or sync a parent turned on
+   (sealed; the relay cannot read it).
 2. **Domain depends inward.** Controllers and screens never import Drift; they
    talk to the abstract repository interface.
 3. **Exported CSV is formula-injection-safe.** Every exported cell goes through

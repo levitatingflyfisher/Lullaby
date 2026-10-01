@@ -72,6 +72,6 @@ class MedicineController extends Notifier<AsyncValue<void>> {
   /// the Undo offered after a deliberate delete.
   Future<Result<void>> restore(MedicineLogEntity deleted) async {
     final repo = ref.read(medicineRepositoryProvider);
-    return repo.createMedicineLog(deleted);
+    return repo.restoreMedicineLog(deleted);
   }
 }

@@ -19,9 +19,10 @@ tracked around the clock. The popular apps that help parents record this stream 
 so in the cloud, behind an account, turning a baby's health data into the
 vendor's asset — subject to breaches, terms-of-service changes, ad targeting, and
 acquisition. Lullaby is the opposite bet: a fully featured tracker whose data
-lives **only on the device**, requires **no account**, makes **no network calls**
-in normal use, and leaves the phone only when a parent deliberately exports or
-backs it up. It shows that "private" and "capable" are not in tension for this
+lives **on the device**, requires **no account**, makes **no network calls**
+unless the parents turn on sync, and leaves the phone only when a parent
+deliberately exports it, backs it up, or syncs it, sealed, to the other parent's
+phone. It shows that "private" and "capable" are not in tension for this
 class of app.
 
 ## 1. The problem
@@ -51,12 +52,16 @@ Lullaby stores everything in an on-device SQLite database. There is no account,
 no server of record, no analytics SDK, and no ad SDK anywhere in the build. The
 app is fully functional in airplane mode because offline *is* the design. This is
 not "privacy mode"; it is the only mode. The result is a promise you can check by
-reading `pubspec.yaml` and grepping `lib/` — there is no HTTP client to find.
+reading `pubspec.yaml` and grepping `lib/`: the only HTTP client is the sync
+kernel's relay client, and a test pins that it is never created while sync is
+off.
 
 Data leaves only through two deliberate, parent-initiated exits: a **plaintext
 export** (a doctor-summary PDF or a CSV) shared via the OS share sheet, and an
-**encrypted backup file** the parent saves and carries. Nothing is transmitted
-automatically, ever.
+**encrypted backup file** the parent saves and carries. A third, opt-in exit is
+**sync** between the parents' phones (ADR-0007): changes sealed under keys from
+the household's 12 words, through a relay the household chooses. Nothing is
+transmitted before a parent turns it on.
 
 ## 3. Why local-first matters *here* specifically
 
@@ -87,8 +92,9 @@ load-bearing:
 | Source | Closed | FLOSS (MIT) |
 | Business model | Your data / subscription | None — it's a free tool |
 
-The trade Lullaby accepts, honestly: **no built-in multi-device sync and no
-account recovery.** Holding your own keys means that if you lose both the phone
+The trade Lullaby accepts, honestly: **sync only phone to phone on the same
+Wi-Fi or through a relay the household chooses (nobody runs one for you yet),
+and no account recovery.** Holding your own keys means that if you lose both the phone
 and the seed phrase, the data is gone. That is the price of nobody else holding
 your child's record, and it is the right price for this data.
 
@@ -122,8 +128,9 @@ feature gap — it is consumed as a sibling-repo path dependency rather than
 published on pub.dev, so building from a fresh checkout still requires
 cloning the sibling packages by hand; a **"named"/synced tier** exists in
 the enum but is unimplemented (only the
-account-free ghost tier runs); **multi-device sync** with real merge semantics is
-unbuilt (the hard, honest open problem — see [VISION.md](../VISION.md) Horizons);
+account-free ghost tier runs); **two-phone sync** is new (field-level merges through a household relay or on
+the same Wi-Fi with a code; the browser has only the relay; no photo sync yet —
+see [VISION.md](../VISION.md));
 the app is **not yet published** (`applicationId` is still `com.example.lullaby`);
 CI verifies analyze + test on **Linux only**; and README screenshots are pending.
 

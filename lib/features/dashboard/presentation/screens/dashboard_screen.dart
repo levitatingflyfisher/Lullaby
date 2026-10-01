@@ -7,6 +7,7 @@ import '../../../../app/theme/color_schemes.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/extensions/date_extensions.dart';
 import '../../../../core/extensions/duration_extensions.dart';
+import '../../../handoff/presentation/handoff_card.dart';
 import '../../../settings/presentation/controllers/active_baby_controller.dart';
 import '../../../tracking/domain/entities/feeding_log.dart';
 import '../../../tracking/presentation/controllers/diaper_controller.dart';
@@ -127,6 +128,10 @@ class DashboardScreen extends ConsumerWidget {
                   babyId: activeBaby.id,
                   lastFeedAsync: lastFeedAsync,
                 ),
+                const SizedBox(height: 16),
+
+                // The night handoff: the line one parent left the other.
+                HandoffCard(babyId: activeBaby.id),
                 const SizedBox(height: 16),
 
                 // Recent activity

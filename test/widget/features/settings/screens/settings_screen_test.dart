@@ -55,7 +55,14 @@ void main() {
       );
 
       expect(find.text('Privacy'), findsOneWidget);
-      expect(find.text('All data stays on your device'), findsOneWidget);
+      // Honest since two-phone sync: the data leaves only by a parent's choice.
+      expect(find.text('Stays on this phone unless you turn on sync or export'),
+          findsOneWidget);
+    });
+
+    testWidgets('has a door to Sync with another phone', (tester) async {
+      await tester.pumpWidget(_settings());
+      expect(find.text('Sync with another phone'), findsOneWidget);
     });
 
     testWidgets('tapping theme opens dialog', (tester) async {

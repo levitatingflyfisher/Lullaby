@@ -25,7 +25,8 @@ this reflects the code as read, verified by the test suite where noted.
 | **Dark mode / Material 3** | ✅ Shipped | follow phone (default), Light or Dark from the top bar, remembered across launches; dynamic colour on Android 12+ |
 | **Encrypted backup / restore** | ✅ Shipped | app-side flow + OHBK format real & tested, real audited crypto (`sanctuary_auth_core`, sibling path dep); pre-rewire (CI-stub-era) exports are a known, documented incompatibility — see [limitations.md](../limitations.md#known-incompatibility-pre-rewire-stub-era-backups) |
 | **Seed-phrase recovery** | ✅ Shipped | generate/confirm/derive-key flow on the real `sanctuary_auth_core` module |
-| **Multi-device sync** | ❌ Not shipped | no server; sharing = carry an encrypted backup |
+| **Two-phone sync** | ⚠️ Shipped, early | opt-in, through a household relay and/or phone to phone on the same Wi-Fi (show or type a code, QR link; Android, not the PWA); field-level merges, lasting Undo, Forget this phone; status says which path last synced; two-phone tests through the real relay binary and over loopback Wi-Fi (`test/sync/`). No mDNS discovery or photo sync; restore is refused while sync is on |
+| **Note for the next shift** | ✅ Shipped | append-only handoff notes on Home; sync to the other phone; kept in backups |
 | **"Named"/account tier** | ❌ Not shipped | `AuthTier.named` exists in the enum; only `ghost` runs |
 | **Reminders / notifications** | ❌ Not built | no scheduled reminders |
 | **App-store release** | ❌ Not done | `applicationId` still `com.example.lullaby`; release CI omitted |

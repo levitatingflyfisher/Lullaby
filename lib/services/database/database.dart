@@ -21,6 +21,7 @@ part 'database.g.dart';
     GrowthRecords,
     MedicineLogs,
     VaccineRecords,
+    HandoffNotes,
   ],
   daos: [BabyDao, FeedingDao, SleepDao, DiaperDao, GrowthDao, MedicineDao, VaccineDao],
 )
@@ -30,7 +31,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -55,6 +56,10 @@ class AppDatabase extends _$AppDatabase {
             await _normalizeActiveBaby();
             await _createIndices();
           }
+          if (from < 5) {
+            await m.createTable(handoffNotes);
+            await _createIndices();
+          }
         },
         beforeOpen: (details) async {
           // SQLite enforces foreign keys per-connection and defaults to OFF.
@@ -77,6 +82,8 @@ class AppDatabase extends _$AppDatabase {
         'CREATE INDEX IF NOT EXISTS idx_medicine_baby_administered ON medicine_logs (baby_id, administered_at)');
     await customStatement(
         'CREATE INDEX IF NOT EXISTS idx_vaccine_baby_administered ON vaccine_records (baby_id, administered_date)');
+    await customStatement(
+        'CREATE INDEX IF NOT EXISTS idx_handoff_baby_written ON handoff_notes (baby_id, written_at)');
   }
 
   Future<void> _cleanOrphanedRows() async {

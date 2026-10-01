@@ -5,11 +5,19 @@ import '../../../../core/errors/result.dart';
 import '../../../../services/database/database.dart' as db;
 import '../../../../services/database/daos/sleep_dao.dart';
 import '../../domain/entities/sleep_log.dart';
+import '../../../sync/data/lullaby_records.dart';
+import '../../../sync/data/record_projection.dart';
+import '../../../sync/data/record_writer.dart';
 import '../../domain/repositories/sleep_repository.dart';
 
 class SleepRepositoryImpl implements SleepRepository {
-  SleepRepositoryImpl(this._dao);
+  SleepRepositoryImpl(this._dao, [RecordWriter? writer])
+      : _writer = writer ?? DirectRecordWriter(RecordProjection(_dao.attachedDatabase));
   final SleepDao _dao;
+
+  /// Every change goes through here, so it reaches the household's log when
+  /// sync is on (docs/adr/0007-household-sync.md). Reads stay on [_dao].
+  final RecordWriter _writer;
 
   @override
   Future<Result<List<SleepLogEntity>>> getAllForBaby(String babyId) async {
@@ -63,7 +71,7 @@ class SleepRepositoryImpl implements SleepRepository {
   @override
   Future<Result<void>> createSleep(SleepLogEntity log) async {
     try {
-      await _dao.insertSleep(_toCompanion(log));
+      await _writer.put(sleepSpec, log.id, companionFields(sleepSpec, _toCompanion(log)));
       return const Success(null);
     } catch (e) {
       return Err(DatabaseFailure(e.toString()));
@@ -73,7 +81,7 @@ class SleepRepositoryImpl implements SleepRepository {
   @override
   Future<Result<void>> updateSleep(SleepLogEntity log) async {
     try {
-      await _dao.updateSleep(_toCompanion(log));
+      await _writer.update(sleepSpec, log.id, companionFields(sleepSpec, _toCompanion(log)));
       return const Success(null);
     } catch (e) {
       return Err(DatabaseFailure(e.toString()));
@@ -83,7 +91,17 @@ class SleepRepositoryImpl implements SleepRepository {
   @override
   Future<Result<void>> deleteSleep(String id) async {
     try {
-      await _dao.deleteSleep(id);
+      await _writer.delete(sleepSpec, id);
+      return const Success(null);
+    } catch (e) {
+      return Err(DatabaseFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Result<void>> restoreSleep(SleepLogEntity log) async {
+    try {
+      await _writer.restore(sleepSpec, log.id, companionFields(sleepSpec, _toCompanion(log)));
       return const Success(null);
     } catch (e) {
       return Err(DatabaseFailure(e.toString()));

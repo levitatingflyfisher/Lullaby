@@ -38,6 +38,13 @@ phone; come back and read the circle; tap it again. Success: the control shows
 it is running and says what the next tap will do. Check: long-pressing Diaper
 is not the only way to its full form.
 
+**M5. Hand the night over.** Start: sync on between Mei's and Jordan's
+phones through the household relay. Steps: at 3:20 a.m., on Home, tap "Note
+for the next shift", type "Last feed 3:10, left side. Fussy.", tap Leave note.
+Success: Jordan's phone shows the note on its Home card, signed "Mei's phone",
+after its next sync. Check: the field sits at the top of the sheet; dark mode;
+text scale 1.3.
+
 ## Secondary: Jordan, preparing for the paediatrician
 
 Jordan is 34, Mei's partner, the one who takes the baby to checkups. They
@@ -65,3 +72,11 @@ and when the next is allowed. Check: page heading reads "Health".
 setup; read the twelve words; tap "I've written this down". Success: words
 sit on a numbered grid; something checks they were written down. Check: text
 scale 1.3; delete a feed and look for Undo, not just "This cannot be undone".
+
+**J5. Join Mei's phone.** Start: Mei's phone already syncs; Jordan's phone
+has Lullaby with no words. Steps: Settings → Sync with another phone; name the
+phone "Jordan's phone"; type the relay address; Join a phone that already
+syncs; type Mei's 12 words. Success: the status says "Last synced" with a time,
+and Mei's feeds appear in Jordan's timeline. Check: a plain-http relay address
+is refused in words; the OpenHearth relay is visibly not available yet; airplane
+mode shows "Couldn't reach the relay", not an error code.

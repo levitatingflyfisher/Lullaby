@@ -5,11 +5,19 @@ import '../../../../core/errors/result.dart';
 import '../../../../services/database/database.dart' as db;
 import '../../../../services/database/daos/feeding_dao.dart';
 import '../../domain/entities/feeding_log.dart';
+import '../../../sync/data/lullaby_records.dart';
+import '../../../sync/data/record_projection.dart';
+import '../../../sync/data/record_writer.dart';
 import '../../domain/repositories/feeding_repository.dart';
 
 class FeedingRepositoryImpl implements FeedingRepository {
-  FeedingRepositoryImpl(this._dao);
+  FeedingRepositoryImpl(this._dao, [RecordWriter? writer])
+      : _writer = writer ?? DirectRecordWriter(RecordProjection(_dao.attachedDatabase));
   final FeedingDao _dao;
+
+  /// Every change goes through here, so it reaches the household's log when
+  /// sync is on (docs/adr/0007-household-sync.md). Reads stay on [_dao].
+  final RecordWriter _writer;
 
   @override
   Future<Result<List<FeedingLogEntity>>> getAllForBaby(String babyId) async {
@@ -63,7 +71,7 @@ class FeedingRepositoryImpl implements FeedingRepository {
   @override
   Future<Result<void>> createFeeding(FeedingLogEntity log) async {
     try {
-      await _dao.insertFeeding(_toCompanion(log));
+      await _writer.put(feedingSpec, log.id, companionFields(feedingSpec, _toCompanion(log)));
       return const Success(null);
     } catch (e) {
       return Err(DatabaseFailure(e.toString()));
@@ -73,7 +81,7 @@ class FeedingRepositoryImpl implements FeedingRepository {
   @override
   Future<Result<void>> updateFeeding(FeedingLogEntity log) async {
     try {
-      await _dao.updateFeeding(_toCompanion(log));
+      await _writer.update(feedingSpec, log.id, companionFields(feedingSpec, _toCompanion(log)));
       return const Success(null);
     } catch (e) {
       return Err(DatabaseFailure(e.toString()));
@@ -83,7 +91,7 @@ class FeedingRepositoryImpl implements FeedingRepository {
   @override
   Future<Result<void>> updateNotes(String id, String? notes) async {
     try {
-      await _dao.updateNotes(id, notes, DateTime.now());
+      await _writer.update(feedingSpec, id, {'notes': notes, 'modified_at': DateTime.now()});
       return const Success(null);
     } catch (e) {
       return Err(DatabaseFailure(e.toString()));
@@ -93,7 +101,17 @@ class FeedingRepositoryImpl implements FeedingRepository {
   @override
   Future<Result<void>> deleteFeeding(String id) async {
     try {
-      await _dao.deleteFeeding(id);
+      await _writer.delete(feedingSpec, id);
+      return const Success(null);
+    } catch (e) {
+      return Err(DatabaseFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Result<void>> restoreFeeding(FeedingLogEntity log) async {
+    try {
+      await _writer.restore(feedingSpec, log.id, companionFields(feedingSpec, _toCompanion(log)));
       return const Success(null);
     } catch (e) {
       return Err(DatabaseFailure(e.toString()));

@@ -78,6 +78,6 @@ class GrowthController extends Notifier<AsyncValue<void>> {
   /// the Undo offered after a deliberate delete.
   Future<Result<void>> restoreRecord(GrowthRecordEntity deleted) async {
     final repo = ref.read(growthRepositoryProvider);
-    return repo.createGrowthRecord(deleted);
+    return repo.restoreGrowthRecord(deleted);
   }
 }

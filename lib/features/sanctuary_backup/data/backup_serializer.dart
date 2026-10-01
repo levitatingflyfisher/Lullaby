@@ -16,7 +16,12 @@ class LullabyBackupSerializer
     implements BackupSerializer, PreviewableBackupSerializer {
   final AppDatabase _db;
 
-  const LullabyBackupSerializer(this._db);
+  /// Whether household sync is on. A restore wipes and refills every table in
+  /// one transaction, which the sync log cannot take as one step, so while
+  /// sync is on a restore is refused (ADR-0007) rather than half-applied.
+  final Future<bool> Function()? syncOn;
+
+  const LullabyBackupSerializer(this._db, {this.syncOn});
 
   static const String _appId = 'lullaby';
 
@@ -37,6 +42,7 @@ class LullabyBackupSerializer
     final allGrowth = await _db.select(_db.growthRecords).get();
     final allMedicine = await _db.select(_db.medicineLogs).get();
     final allVaccines = await _db.select(_db.vaccineRecords).get();
+    final allNotes = await _db.select(_db.handoffNotes).get();
 
     final stamp = DateTime.now().toUtc().toIso8601String();
     final payload = <String, dynamic>{
@@ -52,6 +58,8 @@ class LullabyBackupSerializer
         'growthRecords': allGrowth.map((r) => r.toJson()).toList(),
         'medicineLogs': allMedicine.map((r) => r.toJson()).toList(),
         'vaccineRecords': allVaccines.map((r) => r.toJson()).toList(),
+        // Additive (schema 5): older readers ignore an unknown table.
+        'handoffNotes': allNotes.map((r) => r.toJson()).toList(),
       },
     };
 
@@ -99,10 +107,12 @@ class LullabyBackupSerializer
   /// required fields.
   @override
   Future<void> restoreAll(Uint8List data) async {
+    if (await syncOn?.call() ?? false) throw const RestoreWhileSyncingException();
     final tables = _requireTables(_unwrap(data).payload);
 
     await _db.transaction(() async {
       // Wipe in reverse FK order to avoid constraint violations.
+      await _db.delete(_db.handoffNotes).go();
       await _db.delete(_db.vaccineRecords).go();
       await _db.delete(_db.medicineLogs).go();
       await _db.delete(_db.growthRecords).go();
@@ -228,6 +238,18 @@ class LullabyBackupSerializer
               ),
             );
       }
+
+      for (final row in _jsonList(tables, 'handoffNotes')) {
+        await _db.into(_db.handoffNotes).insert(
+              HandoffNotesCompanion.insert(
+                id: row['id'] as String,
+                babyId: row['babyId'] as String,
+                body: row['body'] as String,
+                author: Value(row['author'] as String?),
+                writtenAt: _dateTime(row['writtenAt']),
+              ),
+            );
+      }
     });
   }
 
@@ -251,4 +273,14 @@ class LullabyBackupSerializer
     if (value == null) return null;
     return _dateTime(value);
   }
+}
+
+/// A restore was refused because household sync is on (ADR-0007).
+class RestoreWhileSyncingException implements Exception {
+  const RestoreWhileSyncingException();
+
+  @override
+  String toString() =>
+      'Restoring a backup is off while sync is on. Forget this phone in '
+      'Settings > Sync with another phone first.';
 }

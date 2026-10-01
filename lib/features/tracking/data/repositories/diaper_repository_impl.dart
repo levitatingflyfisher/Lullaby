@@ -5,11 +5,19 @@ import '../../../../core/errors/result.dart';
 import '../../../../services/database/database.dart' as db;
 import '../../../../services/database/daos/diaper_dao.dart';
 import '../../domain/entities/diaper_log.dart';
+import '../../../sync/data/lullaby_records.dart';
+import '../../../sync/data/record_projection.dart';
+import '../../../sync/data/record_writer.dart';
 import '../../domain/repositories/diaper_repository.dart';
 
 class DiaperRepositoryImpl implements DiaperRepository {
-  DiaperRepositoryImpl(this._dao);
+  DiaperRepositoryImpl(this._dao, [RecordWriter? writer])
+      : _writer = writer ?? DirectRecordWriter(RecordProjection(_dao.attachedDatabase));
   final DiaperDao _dao;
+
+  /// Every change goes through here, so it reaches the household's log when
+  /// sync is on (docs/adr/0007-household-sync.md). Reads stay on [_dao].
+  final RecordWriter _writer;
 
   @override
   Future<Result<List<DiaperLogEntity>>> getAllForBaby(String babyId) async {
@@ -72,7 +80,7 @@ class DiaperRepositoryImpl implements DiaperRepository {
   @override
   Future<Result<void>> createDiaper(DiaperLogEntity log) async {
     try {
-      await _dao.insertDiaper(_toCompanion(log));
+      await _writer.put(diaperSpec, log.id, companionFields(diaperSpec, _toCompanion(log)));
       return const Success(null);
     } catch (e) {
       return Err(DatabaseFailure(e.toString()));
@@ -82,7 +90,7 @@ class DiaperRepositoryImpl implements DiaperRepository {
   @override
   Future<Result<void>> updateDiaper(DiaperLogEntity log) async {
     try {
-      await _dao.updateDiaper(_toCompanion(log));
+      await _writer.update(diaperSpec, log.id, companionFields(diaperSpec, _toCompanion(log)));
       return const Success(null);
     } catch (e) {
       return Err(DatabaseFailure(e.toString()));
@@ -92,7 +100,17 @@ class DiaperRepositoryImpl implements DiaperRepository {
   @override
   Future<Result<void>> deleteDiaper(String id) async {
     try {
-      await _dao.deleteDiaper(id);
+      await _writer.delete(diaperSpec, id);
+      return const Success(null);
+    } catch (e) {
+      return Err(DatabaseFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Result<void>> restoreDiaper(DiaperLogEntity log) async {
+    try {
+      await _writer.restore(diaperSpec, log.id, companionFields(diaperSpec, _toCompanion(log)));
       return const Success(null);
     } catch (e) {
       return Err(DatabaseFailure(e.toString()));

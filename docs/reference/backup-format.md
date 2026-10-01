@@ -63,14 +63,19 @@ The payload is UTF-8 JSON produced by `BackupSerializer.dumpAll`:
     "diaperLogs":     [ … ],
     "growthRecords":  [ … ],
     "medicineLogs":   [ … ],
-    "vaccineRecords": [ … ]
+    "vaccineRecords": [ … ],
+    "handoffNotes":   [ … ]
   }
 }
 ```
 
 - Rows are Drift's row JSON; `DateTime` values are encoded as **Unix milliseconds
   (integer)** (the serializer also tolerates ISO-8601 strings on restore).
-- `schemaVersion` is the database schema version at export time (currently 4).
+- `schemaVersion` is the database schema version at export time (currently 5).
+- `handoffNotes` (schema 5) holds the "Note for the next shift" notes: id, baby
+  id, text, the phone that wrote it and when. A restore replaces them like every
+  other table; a backup without the key restores with no notes. Older readers
+  ignore the extra table.
 
 ## Decode & fail-safe rules
 

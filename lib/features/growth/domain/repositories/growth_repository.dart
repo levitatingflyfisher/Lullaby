@@ -10,4 +10,6 @@ abstract class GrowthRepository {
   Future<Result<void>> createGrowthRecord(GrowthRecordEntity record);
   Future<Result<void>> updateGrowthRecord(GrowthRecordEntity record);
   Future<Result<void>> deleteGrowthRecord(String id);
+  /// Undo a delete of [record] (the kernel's Restore when sync is on).
+  Future<Result<void>> restoreGrowthRecord(GrowthRecordEntity record);
 }

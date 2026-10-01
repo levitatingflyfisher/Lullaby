@@ -14,6 +14,9 @@ import '../features/health/presentation/screens/health_screen.dart';
 import '../features/health/vaccine/presentation/screens/vaccine_add_screen.dart';
 import '../features/health/vaccine/presentation/screens/vaccine_screen.dart';
 import '../features/settings/presentation/screens/settings_screen.dart';
+import '../features/sync/presentation/sync_review_screen.dart';
+import '../features/sync/presentation/sync_screen.dart';
+import '../features/sync/presentation/wifi_sync.dart';
 import '../features/timeline/presentation/screens/timeline_screen.dart';
 import '../features/tracking/presentation/screens/diaper_log_screen.dart';
 import '../features/tracking/presentation/screens/feeding_log_screen.dart';
@@ -88,6 +91,24 @@ final router = GoRouter(
       parentNavigatorKey: _rootNavigatorKey,
       path: '/settings',
       builder: (context, state) => const SettingsScreen(),
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: '/settings/sync',
+      builder: (context, state) => const SyncScreen(),
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: '/settings/sync/review',
+      builder: (context, state) => const SyncReviewScreen(),
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: '/settings/sync/wifi',
+      builder: (context, state) => WifiSyncScreen(
+        show: state.uri.queryParameters['mode'] == 'show',
+        code: state.uri.queryParameters['code'],
+      ),
     ),
     GoRoute(
       parentNavigatorKey: _rootNavigatorKey,

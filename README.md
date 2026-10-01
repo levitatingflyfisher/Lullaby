@@ -2,7 +2,7 @@
 
 **FLOSS baby tracker for exhausted parents.**
 
-Lullaby is a privacy-first, offline baby tracking app. All data is stored locally on the device — no accounts, no ads, no tracking. Track feeds, sleep, diapers, growth, health records, and more, all in one place.
+Lullaby is a privacy-first, offline baby tracking app. All data is stored locally on the device — no accounts, no ads, no tracking. Two parents can opt in to syncing one record between their phones, sealed with their recovery words. Track feeds, sleep, diapers, growth, health records, and more, all in one place.
 
 ![Platform: Android](https://img.shields.io/badge/platform-Android-brightgreen)
 ![Platform: iOS](https://img.shields.io/badge/platform-iOS-lightgrey)
@@ -13,7 +13,8 @@ Lullaby is a privacy-first, offline baby tracking app. All data is stored locall
 > ate, how they slept, every medicine and vaccine. That record should live on
 > *your* phone and nowhere else. Lullaby is the calm, private, no-account
 > alternative to cloud baby trackers: your child's data never leaves the device
-> unless you deliberately export it.
+> unless you deliberately export it, or turn on sync with your partner's
+> phone (sealed end to end; the relay cannot read it).
 
 **New here?** Read the [Vision](VISION.md) for the one idea and the honest
 scorecard, then browse the [documentation](docs/README.md) (organized
@@ -34,6 +35,8 @@ this repo? Start with [AGENTS.md](AGENTS.md).
 - **Timeline** — scrollable activity history with filter chips
 - **Doctor summary** — at-a-glance summary ready to share at appointments
 - **Multiple babies** — manage profiles for more than one child
+- **Note for the next shift** — a line one parent leaves the other, on Home
+- **Sync with another phone** (opt-in) — two parents, one record: changes travel sealed with your 12 recovery words, straight to the other phone on the same Wi-Fi (one shows a code, the other types it; no server at all, Android app only) or through a household relay; edits to different fields of one record both survive, deletes keep a lasting Undo, and a lost phone is removed with "Forget this phone". The second phone joins by typing the same words.
 - **Dark mode** — follow the phone, or choose Light or Dark from the top bar; the choice is remembered
 - **Material 3** — dynamic colour theming on supported Android devices
 
@@ -80,12 +83,19 @@ the paths resolve:
 packages/
   sanctuary_auth_core/     # github: levitatingflyfisher/sanctuaryAuthCore
   sanctuary_backup_ui/     # github: levitatingflyfisher/sanctuaryBackupUi
+hearthSync/                # github: levitatingflyfisher/hearthSync (sync kernel)
 Lullaby/                   # this repo
 ```
+
+Two-phone sync uses the fleet's sync kernel, `hearth_sync`, by the same kind
+of sibling path (`../hearthSync/flutter/hearth_sync`). Its Rust kernel is
+built for Android by the plugin's own Gradle step (cargokit); the web build
+needs the kernel's WASM in `web/pkg/` (`tool/build_web.sh` makes it).
 
 ```bash
 git clone https://github.com/levitatingflyfisher/sanctuaryAuthCore packages/sanctuary_auth_core
 git clone https://github.com/levitatingflyfisher/sanctuaryBackupUi packages/sanctuary_backup_ui
+git clone https://github.com/levitatingflyfisher/hearthSync hearthSync
 git clone <repo-url> Lullaby
 cd Lullaby
 flutter pub get

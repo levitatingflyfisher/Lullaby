@@ -49,16 +49,17 @@ void main() => runFleetConformance(const FleetAppConfig(
       // 0xFF7B8FD4 is app-local, not a canonical token) pinned by the
       // visual golden sweeps.
       styleTier: StyleTier.tokens,
-      // ZERO permissions — the empty set IS the claim, over the surface C4
-      // actually reads: the SOURCE AndroidManifest declares no permissions
-      // (and none may appear). Plugins could still inject permissions at
-      // build time via manifest merging; checking the MERGED manifest of a
-      // built APK is recorded as a future deepening.
-      androidPermissions: {},
+      // ONE permission, and the set IS the claim over the source manifest:
+      // INTERNET, for two-phone sync through the relay a parent chose
+      // (docs/adr/0007-household-sync.md). Sync is off until a parent turns
+      // it on; household_sync_off_test pins that no bridge or HTTP client
+      // exists before then. Nothing else may appear.
+      androidPermissions: {'android.permission.INTERNET'},
       // C4 v2 — the release MERGED surface: source permissions plus
       // what plugins and the manifest merge inject. Bites when an APK
       // build has left a merged manifest under build/ (dev box).
       mergedAndroidPermissions: {
+        'android.permission.INTERNET',
         'android.permission.ACCESS_NETWORK_STATE',
         'android.permission.FOREGROUND_SERVICE',
         'android.permission.RECEIVE_BOOT_COMPLETED',

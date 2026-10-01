@@ -1,6 +1,6 @@
 # ADR-0001: Local-first, on-device only, no account or BaaS
 
-- **Status:** Accepted
+- **Status:** Accepted; amended by [ADR-0007](0007-household-sync.md) (opt-in two-phone sync through a household relay)
 - **Date:** 2026-07-03 (documenting a decision load-bearing since v1.0.0)
 
 ## Context

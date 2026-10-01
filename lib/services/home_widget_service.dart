@@ -12,6 +12,11 @@ class HomeWidgetService {
 
   static const _appGroupId = 'group.com.openhearth.lullaby';
 
+  /// The widget's AppWidgetProvider, fully qualified. home_widget otherwise
+  /// builds `<applicationId>.<name>`, which named a class that does not exist
+  /// (home_widget_android_test pins this against android/).
+  static const androidProvider = 'com.openhearth.lullaby.LullabyWidgetProvider';
+
   static Future<void> init() async {
     await HomeWidget.setAppGroupId(_appGroupId);
   }
@@ -46,7 +51,9 @@ class HomeWidgetService {
         'lullaby.active_timer_start',
         activeTimer?.startTime.toUtc().toIso8601String());
     await HomeWidget.updateWidget(
-        name: 'LullabyWidget', iOSName: 'LullabyWidget');
+        name: 'LullabyWidget',
+        iOSName: 'LullabyWidget',
+        qualifiedAndroidName: androidProvider);
   }
 
   /// Exposed for testing. Production callers use [update].

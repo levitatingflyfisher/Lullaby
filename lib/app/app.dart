@@ -1,8 +1,11 @@
+import 'dart:developer' as developer;
+
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sanctuary_backup_ui/sanctuary_backup_ui.dart';
 
+import '../core/providers/sync_providers.dart';
 import '../features/home_widget/presentation/controllers/home_widget_controller.dart';
 import '../features/settings/presentation/controllers/active_baby_controller.dart';
 import '../features/settings/presentation/controllers/theme_controller.dart';
@@ -30,6 +33,11 @@ class _LullabyAppState extends ConsumerState<LullabyApp>
     // + fire-and-forget — never blocks boot, never surfaces errors.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(backupControllerProvider.notifier).runStartupMaintenance();
+      // If sync is on, open the household's log and start pulling now, not
+      // at the first write. With sync off this is one table-name lookup.
+      ref.read(householdSyncProvider).boot().catchError((Object e) {
+        developer.log('sync did not start', name: 'lullaby.sync', error: e);
+      });
     });
     // Update the widget once the active baby has actually loaded. The previous
     // post-frame callback ran while activeBabyProvider was still loading, so it
@@ -55,6 +63,8 @@ class _LullabyAppState extends ConsumerState<LullabyApp>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       ref.read(homeWidgetControllerProvider).triggerUpdate();
+      // Back on screen: fetch what the other phone did meanwhile.
+      ref.read(householdSyncProvider).syncNow();
     }
   }
 

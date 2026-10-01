@@ -204,6 +204,17 @@ void main() {
       expect(feedings, isEmpty);
     });
 
+    // ADR-0007: a restore is one transaction over every table, which the sync
+    // log cannot take as one step, so it is refused while sync is on.
+    test('restoreAll is refused while sync is on and touches nothing', () async {
+      await seedData();
+      final dump = await serializer.dumpAll();
+      final syncing = LullabyBackupSerializer(db, syncOn: () async => true);
+      await expectLater(syncing.restoreAll(dump),
+          throwsA(isA<RestoreWhileSyncingException>()));
+      expect(await db.select(db.babies).get(), hasLength(1));
+    });
+
     test('restoreAll rejects future schema version', () async {
       final payload = jsonEncode({
         'schemaVersion': 999,
@@ -246,6 +257,44 @@ void main() {
         () => serializer.restoreAll(bytes),
         throwsA(isA<FormatException>()),
       );
+    });
+
+    // The night handoff's notes are records like any other: a backup keeps
+    // them, and a restore brings them back with their author and time.
+    test('handoff notes are backed up and restored', () async {
+      await seedData();
+      await db.into(db.handoffNotes).insert(HandoffNotesCompanion.insert(
+            id: 'n1',
+            babyId: 'b1',
+            body: 'Fed at 2, should sleep till 5',
+            author: const Value('Phone 2'),
+            writtenAt: DateTime(2026, 4, 10, 2, 5),
+          ));
+      final bytes = await serializer.dumpAll();
+      final json = jsonDecode(utf8.decode(bytes)) as Map<String, dynamic>;
+      expect((json['tables'] as Map)['handoffNotes'], hasLength(1));
+
+      await db.delete(db.handoffNotes).go();
+      await serializer.restoreAll(bytes);
+      final notes = await db.select(db.handoffNotes).get();
+      expect(notes, hasLength(1));
+      expect(notes.single.id, 'n1');
+      expect(notes.single.babyId, 'b1');
+      expect(notes.single.body, 'Fed at 2, should sleep till 5');
+      expect(notes.single.author, 'Phone 2');
+      expect(notes.single.writtenAt, DateTime(2026, 4, 10, 2, 5));
+    });
+
+    test('a restore replaces the notes too, even from a backup that had none', () async {
+      await db.into(db.handoffNotes).insert(HandoffNotesCompanion.insert(
+            id: 'n0', babyId: 'b1', body: 'old', writtenAt: now));
+      final payload = jsonEncode({
+        'schemaVersion': db.schemaVersion,
+        'exportedAt': DateTime.now().toIso8601String(),
+        'tables': {'babies': <dynamic>[]},
+      });
+      await serializer.restoreAll(Uint8List.fromList(utf8.encode(payload)));
+      expect(await db.select(db.handoffNotes).get(), isEmpty);
     });
 
     test('restoreAll handles missing table gracefully (old backup)', () async {

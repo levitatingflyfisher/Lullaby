@@ -84,6 +84,6 @@ class VaccineController extends Notifier<AsyncValue<void>> {
   /// the Undo offered after a deliberate delete.
   Future<Result<void>> restore(VaccineRecordEntity deleted) async {
     final repo = ref.read(vaccineRepositoryProvider);
-    return repo.createVaccineRecord(deleted);
+    return repo.restoreVaccineRecord(deleted);
   }
 }

@@ -113,7 +113,7 @@ class DiaperController extends Notifier<AsyncValue<void>> {
   /// the Undo offered after a deliberate delete.
   Future<Result<void>> restoreLog(DiaperLogEntity deleted) async {
     final repo = ref.read(diaperRepositoryProvider);
-    final result = await repo.createDiaper(deleted);
+    final result = await repo.restoreDiaper(deleted);
     unawaited(ref.read(homeWidgetControllerProvider).triggerUpdate());
     return result;
   }

@@ -52,6 +52,9 @@ class FakeFeedingRepo implements FeedingRepository {
   @override
   Future<Result<void>> deleteFeeding(String id) async =>
       const Success(null);
+  @override
+  Future<Result<void>> restoreFeeding(FeedingLogEntity log) async =>
+      const Success(null);
 }
 
 class FakeSleepRepo implements SleepRepository {
@@ -91,6 +94,9 @@ class FakeSleepRepo implements SleepRepository {
       const Success(null);
   @override
   Future<Result<void>> deleteSleep(String id) async =>
+      const Success(null);
+  @override
+  Future<Result<void>> restoreSleep(SleepLogEntity log) async =>
       const Success(null);
 }
 
@@ -132,6 +138,9 @@ class FakeDiaperRepo implements DiaperRepository {
       const Success(null);
   @override
   Future<Result<void>> deleteDiaper(String id) async =>
+      const Success(null);
+  @override
+  Future<Result<void>> restoreDiaper(DiaperLogEntity log) async =>
       const Success(null);
 }
 

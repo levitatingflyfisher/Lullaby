@@ -221,7 +221,7 @@ class FeedingController extends Notifier<AsyncValue<void>> {
   /// the Undo offered after a deliberate delete.
   Future<Result<void>> restoreLog(FeedingLogEntity deleted) async {
     final repo = ref.read(feedingRepositoryProvider);
-    final result = await repo.createFeeding(deleted);
+    final result = await repo.restoreFeeding(deleted);
     unawaited(ref.read(homeWidgetControllerProvider).triggerUpdate());
     return result;
   }

@@ -5,6 +5,7 @@ import 'package:sanctuary_backup_ui/sanctuary_backup_ui.dart';
 
 import 'app/app.dart';
 import 'core/providers/database_provider.dart';
+import 'core/providers/sync_providers.dart';
 import 'features/sanctuary_backup/after_restore.dart';
 import 'features/settings/presentation/controllers/theme_controller.dart';
 import 'features/sanctuary_backup/data/backup_serializer.dart';
@@ -48,7 +49,10 @@ Future<void> main() async {
         // every fleet PWA shares one origin's localStorage. No-op on native.
         appScopedKeyStoreOverride(),
         backupSerializerProvider.overrideWith(
-          (ref) => LullabyBackupSerializer(ref.watch(databaseProvider)),
+          (ref) => LullabyBackupSerializer(
+            ref.watch(databaseProvider),
+            syncOn: ref.watch(householdSyncProvider).isOn,
+          ),
         ),
       ],
       child: const LullabyApp(),

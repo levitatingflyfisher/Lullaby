@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:sanctuary_backup_ui/sanctuary_backup_ui.dart';
 import 'package:openhearth_design/openhearth_design.dart';
@@ -23,6 +24,14 @@ class SettingsScreen extends ConsumerWidget {
             // Home, which is read at a glance and should not nag. Renders nothing
             // once setup is finished or while dismissed.
             const BackupSetupReminder(),
+            ListTile(
+              key: const Key('settings-sync'),
+              leading: const Icon(Icons.sync),
+              title: const Text('Sync with another phone'),
+              subtitle: const Text('Share the record with your partner'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => context.push('/settings/sync'),
+            ),
             ListTile(
               leading: const Icon(Icons.brightness_6),
               title: const Text('Theme'),
@@ -50,7 +59,8 @@ class SettingsScreen extends ConsumerWidget {
             ListTile(
               leading: const Icon(Icons.privacy_tip_outlined),
               title: const Text('Privacy'),
-              subtitle: const Text('All data stays on your device'),
+              subtitle: const Text(
+                  'Stays on this phone unless you turn on sync or export'),
             ),
             const BackupSettingsSection(),
           ],

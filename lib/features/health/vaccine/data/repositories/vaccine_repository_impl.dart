@@ -5,11 +5,19 @@ import '../../../../../core/errors/result.dart';
 import '../../../../../services/database/database.dart' as db;
 import '../../../../../services/database/daos/vaccine_dao.dart';
 import '../../domain/entities/vaccine_record.dart';
+import '../../../../sync/data/lullaby_records.dart';
+import '../../../../sync/data/record_projection.dart';
+import '../../../../sync/data/record_writer.dart';
 import '../../domain/repositories/vaccine_repository.dart';
 
 class VaccineRepositoryImpl implements VaccineRepository {
-  VaccineRepositoryImpl(this._dao);
+  VaccineRepositoryImpl(this._dao, [RecordWriter? writer])
+      : _writer = writer ?? DirectRecordWriter(RecordProjection(_dao.attachedDatabase));
   final VaccineDao _dao;
+
+  /// Every change goes through here, so it reaches the household's log when
+  /// sync is on (docs/adr/0007-household-sync.md). Reads stay on [_dao].
+  final RecordWriter _writer;
 
   @override
   Future<Result<List<VaccineRecordEntity>>> getAllForBaby(String babyId) async {
@@ -49,7 +57,7 @@ class VaccineRepositoryImpl implements VaccineRepository {
   @override
   Future<Result<void>> createVaccineRecord(VaccineRecordEntity record) async {
     try {
-      await _dao.insertVaccineRecord(_toCompanion(record));
+      await _writer.put(vaccineSpec, record.id, companionFields(vaccineSpec, _toCompanion(record)));
       return const Success(null);
     } catch (e) {
       return Err(DatabaseFailure(e.toString()));
@@ -59,7 +67,7 @@ class VaccineRepositoryImpl implements VaccineRepository {
   @override
   Future<Result<void>> updateVaccineRecord(VaccineRecordEntity record) async {
     try {
-      await _dao.updateVaccineRecord(_toCompanion(record));
+      await _writer.update(vaccineSpec, record.id, companionFields(vaccineSpec, _toCompanion(record)));
       return const Success(null);
     } catch (e) {
       return Err(DatabaseFailure(e.toString()));
@@ -69,7 +77,17 @@ class VaccineRepositoryImpl implements VaccineRepository {
   @override
   Future<Result<void>> deleteVaccineRecord(String id) async {
     try {
-      await _dao.deleteVaccineRecord(id);
+      await _writer.delete(vaccineSpec, id);
+      return const Success(null);
+    } catch (e) {
+      return Err(DatabaseFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Result<void>> restoreVaccineRecord(VaccineRecordEntity record) async {
+    try {
+      await _writer.restore(vaccineSpec, record.id, companionFields(vaccineSpec, _toCompanion(record)));
       return const Success(null);
     } catch (e) {
       return Err(DatabaseFailure(e.toString()));

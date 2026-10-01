@@ -29,9 +29,10 @@ SQLite table:
 - **Vaccine** — a name, dose number, scheduled and administered dates, provider.
 
 Every record also carries an optional free-text **`notes`** field — the place a
-parent records the context a structured field can't hold. There is no separate
-"handoff" record; the notes field *is* the shared scratch space between whoever
-is caring for the baby.
+parent records the context a structured field can't hold. For the handoff between
+whoever is caring for the baby there is also a **note for the next shift**: a
+short, append-only line on Home (a correction is a new note), signed with the
+phone that wrote it once sync is on (ADR-0007).
 
 ## Timers and quick logging
 

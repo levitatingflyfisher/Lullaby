@@ -5,11 +5,19 @@ import '../../../../core/errors/result.dart';
 import '../../../../services/database/database.dart' as db;
 import '../../../../services/database/daos/growth_dao.dart';
 import '../../domain/entities/growth_record.dart';
+import '../../../sync/data/lullaby_records.dart';
+import '../../../sync/data/record_projection.dart';
+import '../../../sync/data/record_writer.dart';
 import '../../domain/repositories/growth_repository.dart';
 
 class GrowthRepositoryImpl implements GrowthRepository {
-  GrowthRepositoryImpl(this._dao);
+  GrowthRepositoryImpl(this._dao, [RecordWriter? writer])
+      : _writer = writer ?? DirectRecordWriter(RecordProjection(_dao.attachedDatabase));
   final GrowthDao _dao;
+
+  /// Every change goes through here, so it reaches the household's log when
+  /// sync is on (docs/adr/0007-household-sync.md). Reads stay on [_dao].
+  final RecordWriter _writer;
 
   @override
   Future<Result<List<GrowthRecordEntity>>> getAllForBaby(String babyId) async {
@@ -49,7 +57,7 @@ class GrowthRepositoryImpl implements GrowthRepository {
   @override
   Future<Result<void>> createGrowthRecord(GrowthRecordEntity record) async {
     try {
-      await _dao.insertGrowthRecord(_toCompanion(record));
+      await _writer.put(growthSpec, record.id, companionFields(growthSpec, _toCompanion(record)));
       return const Success(null);
     } catch (e) {
       return Err(DatabaseFailure(e.toString()));
@@ -59,7 +67,7 @@ class GrowthRepositoryImpl implements GrowthRepository {
   @override
   Future<Result<void>> updateGrowthRecord(GrowthRecordEntity record) async {
     try {
-      await _dao.updateGrowthRecord(_toCompanion(record));
+      await _writer.update(growthSpec, record.id, companionFields(growthSpec, _toCompanion(record)));
       return const Success(null);
     } catch (e) {
       return Err(DatabaseFailure(e.toString()));
@@ -69,7 +77,17 @@ class GrowthRepositoryImpl implements GrowthRepository {
   @override
   Future<Result<void>> deleteGrowthRecord(String id) async {
     try {
-      await _dao.deleteGrowthRecord(id);
+      await _writer.delete(growthSpec, id);
+      return const Success(null);
+    } catch (e) {
+      return Err(DatabaseFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Result<void>> restoreGrowthRecord(GrowthRecordEntity record) async {
+    try {
+      await _writer.restore(growthSpec, record.id, companionFields(growthSpec, _toCompanion(record)));
       return const Success(null);
     } catch (e) {
       return Err(DatabaseFailure(e.toString()));

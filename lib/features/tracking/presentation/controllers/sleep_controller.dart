@@ -150,7 +150,7 @@ class SleepController extends Notifier<AsyncValue<void>> {
   /// the Undo offered after a deliberate delete.
   Future<Result<void>> restoreLog(SleepLogEntity deleted) async {
     final repo = ref.read(sleepRepositoryProvider);
-    final result = await repo.createSleep(deleted);
+    final result = await repo.restoreSleep(deleted);
     unawaited(ref.read(homeWidgetControllerProvider).triggerUpdate());
     return result;
   }

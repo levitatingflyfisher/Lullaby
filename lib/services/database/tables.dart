@@ -107,3 +107,19 @@ class VaccineRecords extends Table {
   @override
   Set<Column> get primaryKey => {id};
 }
+
+/// A line left for whoever takes the next shift (docs/adr/0007-household-sync.md).
+/// Append-only: a correction is a new note. No foreign key on purpose: with
+/// sync on, a note can arrive before (or outlive) its baby on this phone, and
+/// a note whose baby is gone is simply not shown.
+class HandoffNotes extends Table {
+  TextColumn get id => text()();
+  TextColumn get babyId => text()();
+  TextColumn get body => text()();
+  /// The name of the phone that wrote it ("Mei's phone").
+  TextColumn get author => text().nullable()();
+  DateTimeColumn get writtenAt => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
