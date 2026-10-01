@@ -1,11 +1,11 @@
 {
-    "name": "lullaby",
-    "short_name": "lullaby",
+    "name": "Lullaby",
+    "short_name": "Lullaby",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#FBF8F4",
+    "theme_color": "#7B8FD4",
+    "description": "Private, offline baby tracker",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

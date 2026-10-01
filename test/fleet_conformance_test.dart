@@ -9,6 +9,9 @@ void main() => runFleetConformance(const FleetAppConfig(
       // character those faces cannot draw is a box on a real phone. C7
       // sweeps lib/ for any.
       checks: {
+        // C13: the PWA loads nothing from Google's CDNs. web/flutter_bootstrap.js
+        // points CanvasKit and the engine's fallback fonts at this origin.
+        FleetCheck.c13WebSelfHosted,
         ...FleetAppConfig.withBundledFonts,
         FleetCheck.c8IconButtons,
         // C10: no raw exception text on screen; failures go through
