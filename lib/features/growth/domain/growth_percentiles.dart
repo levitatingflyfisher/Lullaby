@@ -2,6 +2,19 @@ import '../../babies/domain/entities/baby.dart';
 import 'entities/growth_record.dart';
 import 'entities/who_percentile_data.dart';
 
+/// Age in months (days / 30.44) at [at] for a baby born on [dateOfBirth].
+///
+/// Days are counted between calendar dates, not as a Duration: across a DST
+/// change a local Duration is an hour short, so Dec 1 -> Jun 1 read as 181
+/// days on a phone in a DST zone and 182 elsewhere, and the percentile moved.
+double growthAgeMonths(DateTime dateOfBirth, DateTime at) {
+  final b = dateOfBirth.toLocal();
+  final m = at.toLocal();
+  final born = DateTime.utc(b.year, b.month, b.day);
+  final measured = DateTime.utc(m.year, m.month, m.day);
+  return measured.difference(born).inDays / 30.44;
+}
+
 /// WHO percentiles for one growth record, plus the reason when there are
 /// none. The single place that turns a record into figures, shared by the
 /// growth screen and the doctor summary so the two can never disagree.
@@ -30,8 +43,7 @@ class GrowthPercentiles {
     // Percentiles must be read at the age the measurement was TAKEN, not the
     // baby's current age (H3) — an old measurement against today's age bands
     // produces a wildly wrong figure.
-    final ageMonths =
-        record.measuredAt.difference(baby.dateOfBirth).inDays / 30.44;
+    final ageMonths = growthAgeMonths(baby.dateOfBirth, record.measuredAt);
     // Checked before the sex guard: an out-of-range measurement is out of
     // range whether or not a sex is recorded, and the note is owed either way.
     final outside = !PercentileCalculator.ageWithinWhoRange(ageMonths);
@@ -39,7 +51,9 @@ class GrowthPercentiles {
     if (gender == null) {
       // Only computed when the sex is known (M8).
       return GrowthPercentiles(
-          outsideWhoRange: outside, needsRecordedSex: !outside);
+        outsideWhoRange: outside,
+        needsRecordedSex: !outside,
+      );
     }
     const calculator = PercentileCalculator();
     double? score(double? value, MeasurementType type) => value == null
@@ -48,7 +62,10 @@ class GrowthPercentiles {
     return GrowthPercentiles(
       weight: score(record.weightKg, MeasurementType.weight),
       height: score(record.heightCm, MeasurementType.height),
-      head: score(record.headCircumferenceCm, MeasurementType.headCircumference),
+      head: score(
+        record.headCircumferenceCm,
+        MeasurementType.headCircumference,
+      ),
       outsideWhoRange: outside,
     );
   }

@@ -31,10 +31,17 @@ class BabyEntity extends Equatable {
   final DateTime createdAt;
   final DateTime modifiedAt;
 
-  String formatAge() {
-    final now = DateTime.now();
-    final diff = now.difference(dateOfBirth);
-    final months = (diff.inDays / 30.44).floor();
+  /// Age counted in calendar days, never as a Duration: across a DST change
+  /// a local Duration is an hour short, so a week-old baby read as "6 days".
+  String formatAge({DateTime? now}) {
+    final b = dateOfBirth.toLocal();
+    final n = (now ?? DateTime.now()).toLocal();
+    final days = DateTime.utc(
+      n.year,
+      n.month,
+      n.day,
+    ).difference(DateTime.utc(b.year, b.month, b.day)).inDays;
+    final months = (days / 30.44).floor();
     final years = (months / 12).floor();
     final remainingMonths = months % 12;
 
@@ -44,9 +51,9 @@ class BabyEntity extends Equatable {
           : '$years yr';
     }
     if (months > 0) return '$months mo';
-    final weeks = (diff.inDays / 7).floor();
+    final weeks = (days / 7).floor();
     if (weeks > 0) return '$weeks wk';
-    if (diff.inDays > 0) return '${diff.inDays} day${diff.inDays == 1 ? '' : 's'}';
+    if (days > 0) return '$days day${days == 1 ? '' : 's'}';
     return 'newborn';
   }
 
@@ -73,6 +80,14 @@ class BabyEntity extends Equatable {
   }
 
   @override
-  List<Object?> get props =>
-      [id, name, dateOfBirth, gender, photoPath, isActive, createdAt, modifiedAt];
+  List<Object?> get props => [
+    id,
+    name,
+    dateOfBirth,
+    gender,
+    photoPath,
+    isActive,
+    createdAt,
+    modifiedAt,
+  ];
 }

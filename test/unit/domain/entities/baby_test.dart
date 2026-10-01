@@ -5,14 +5,14 @@ void main() {
   final now = DateTime(2025, 6, 15);
 
   BabyEntity makeBaby({DateTime? dob}) => BabyEntity(
-        id: '1',
-        name: 'Alice',
-        dateOfBirth: dob ?? DateTime(2024, 12, 15),
-        gender: Gender.female,
-        isActive: true,
-        createdAt: now,
-        modifiedAt: now,
-      );
+    id: '1',
+    name: 'Alice',
+    dateOfBirth: dob ?? DateTime(2024, 12, 15),
+    gender: Gender.female,
+    isActive: true,
+    createdAt: now,
+    modifiedAt: now,
+  );
 
   group('BabyEntity', () {
     test('formatAge returns months for baby under 1 year', () {
@@ -28,14 +28,30 @@ void main() {
 
     test('formatAge returns days for very young baby', () {
       final baby = makeBaby(
-          dob: DateTime.now().subtract(const Duration(days: 3)));
+        dob: DateTime.now().subtract(const Duration(days: 3)),
+      );
       expect(baby.formatAge(), '3 days');
     });
 
     test('formatAge returns weeks for baby over 7 days', () {
       final baby = makeBaby(
-          dob: DateTime.now().subtract(const Duration(days: 14)));
+        dob: DateTime.now().subtract(const Duration(days: 14)),
+      );
       expect(baby.formatAge(), '2 wk');
+    });
+
+    // Age is counted in calendar days. A Duration across a DST change is an
+    // hour short, so a week-old baby read as "6 days" the morning after the
+    // clocks went forward. Discriminates under TZ=America/Denver (CI's zone).
+    test('formatAge counts calendar days across a DST change', () {
+      final baby = makeBaby(dob: DateTime(2025, 3, 5));
+      expect(baby.formatAge(now: DateTime(2025, 3, 12)), '1 wk');
+      expect(baby.formatAge(now: DateTime(2025, 3, 10)), '5 days');
+    });
+
+    test('formatAge ignores the time of day', () {
+      final baby = makeBaby(dob: DateTime(2025, 3, 5, 23));
+      expect(baby.formatAge(now: DateTime(2025, 3, 6, 1)), '1 day');
     });
 
     test('copyWith creates a new instance with changed fields', () {

@@ -78,4 +78,10 @@ jobs:
 
       - name: Run tests
         working-directory: Lullaby
+        # A real DST timezone, not the runner's UTC: calendar-age maths
+        # (growth percentiles, the age label) can only be told apart from
+        # Duration maths when local midnights shift twice a year. It is
+        # also the zone the goldens are baked in.
+        env:
+          TZ: America/Denver
         run: flutter test

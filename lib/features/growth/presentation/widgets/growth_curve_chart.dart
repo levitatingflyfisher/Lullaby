@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../../../babies/domain/entities/baby.dart';
 import '../../domain/entities/growth_record.dart';
 import '../../domain/entities/who_percentile_data.dart';
+import '../../domain/growth_percentiles.dart';
 import '../../../../core/widgets/scaled_tab.dart';
 
 class GrowthCurveChart extends StatefulWidget {
@@ -77,26 +78,26 @@ class _GrowthCurveChartState extends State<GrowthCurveChart>
   }
 
   MeasurementType get _currentType => switch (_tabController.index) {
-        0 => MeasurementType.weight,
-        1 => MeasurementType.height,
-        2 => MeasurementType.headCircumference,
-        _ => MeasurementType.weight,
-      };
+    0 => MeasurementType.weight,
+    1 => MeasurementType.height,
+    2 => MeasurementType.headCircumference,
+    _ => MeasurementType.weight,
+  };
 
   Widget _buildNoSexHint(ThemeData theme) => Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Text(
-            'Set the baby’s sex in their profile to see WHO percentile curves.',
-            textAlign: TextAlign.center,
-            style: theme.textTheme.bodyMedium
-                ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-          ),
+    child: Padding(
+      padding: const EdgeInsets.all(24),
+      child: Text(
+        'Set the baby’s sex in their profile to see WHO percentile curves.',
+        textAlign: TextAlign.center,
+        style: theme.textTheme.bodyMedium?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
         ),
-      );
+      ),
+    ),
+  );
 
-  Widget _buildChart(
-      MeasurementType type, Gender gender, ThemeData theme) {
+  Widget _buildChart(MeasurementType type, Gender gender, ThemeData theme) {
     return LayoutBuilder(
       builder: (context, constraints) =>
           _buildScaledChart(context, constraints, type, gender, theme),
@@ -105,8 +106,13 @@ class _GrowthCurveChartState extends State<GrowthCurveChart>
 
   /// Axis steps chosen from the measured label size, so no two labels touch
   /// at any text scale (audit rank 11: "2kg" printed over "1kg" at 1.3).
-  Widget _buildScaledChart(BuildContext context, BoxConstraints constraints,
-      MeasurementType type, Gender gender, ThemeData theme) {
+  Widget _buildScaledChart(
+    BuildContext context,
+    BoxConstraints constraints,
+    MeasurementType type,
+    Gender gender,
+    ThemeData theme,
+  ) {
     final calculator = const PercentileCalculator();
     final bands = calculator.getPercentileBands(gender, type);
 
@@ -120,8 +126,7 @@ class _GrowthCurveChartState extends State<GrowthCurveChart>
       };
       if (value == null) continue;
 
-      final ageMonths =
-          r.measuredAt.difference(widget.dateOfBirth).inDays / 30.44;
+      final ageMonths = growthAgeMonths(widget.dateOfBirth, r.measuredAt);
       if (ageMonths >= 0 && ageMonths <= 24) {
         dataPoints.add(FlSpot(ageMonths, value));
       }
@@ -138,11 +143,10 @@ class _GrowthCurveChartState extends State<GrowthCurveChart>
     final labelStyle = theme.textTheme.bodySmall;
     final scaler = MediaQuery.textScalerOf(context);
     Size measure(String text) => (TextPainter(
-          text: TextSpan(text: text, style: labelStyle),
-          textDirection: TextDirection.ltr,
-          textScaler: scaler,
-        )..layout())
-            .size;
+      text: TextSpan(text: text, style: labelStyle),
+      textDirection: TextDirection.ltr,
+      textScaler: scaler,
+    )..layout()).size;
 
     // The unit is printed once, in the caption, not on every label.
     final caption = Text(
@@ -158,7 +162,8 @@ class _GrowthCurveChartState extends State<GrowthCurveChart>
     final highest = allValues.reduce((a, b) => a > b ? a : b);
     final labelHeight = measure('0').height;
     final bottomReserved = labelHeight + 8;
-    final plotHeight = constraints.maxHeight -
+    final plotHeight =
+        constraints.maxHeight -
         captionHeight -
         labelHeight / 2 -
         bottomReserved;
@@ -201,10 +206,12 @@ class _GrowthCurveChartState extends State<GrowthCurveChart>
               maxY: maxY,
               gridData: const FlGridData(show: false),
               titlesData: FlTitlesData(
-                topTitles:
-                    const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                rightTitles:
-                    const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                topTitles: const AxisTitles(
+                  sideTitles: SideTitles(showTitles: false),
+                ),
+                rightTitles: const AxisTitles(
+                  sideTitles: SideTitles(showTitles: false),
+                ),
                 bottomTitles: AxisTitles(
                   sideTitles: SideTitles(
                     showTitles: true,
