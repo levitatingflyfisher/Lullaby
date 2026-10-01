@@ -122,11 +122,11 @@ class _SleepLogScreenState extends ConsumerState<SleepLogScreen> {
       );
       return;
     }
-    undo.show(
+    offerUndo(
+      undo,
       message: 'Sleep deleted',
-      onUndo: () async {
-        await controller.restoreLog(deleted);
-      },
+      what: 'the sleep',
+      restore: () => controller.restoreLog(deleted),
     );
     Navigator.pop(context);
   }

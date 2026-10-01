@@ -133,11 +133,11 @@ class _MedicineAddScreenState extends ConsumerState<MedicineAddScreen> {
       );
       return;
     }
-    undo.show(
+    offerUndo(
+      undo,
       message: 'Medicine dose deleted',
-      onUndo: () async {
-        await controller.restore(deleted);
-      },
+      what: 'the medicine dose',
+      restore: () => controller.restore(deleted),
     );
     Navigator.pop(context);
   }

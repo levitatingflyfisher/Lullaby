@@ -216,4 +216,49 @@ void main() {
     expect(wifiSyncLink('X'), 'lullaby://sync/settings/sync/wifi?code=X');
     await tidy(tester);
   });
+
+  // The QR link replaced the whole stack: "Type a code" had no back arrow,
+  // and system Back left the app (sync-B concern 6). Opened from a link,
+  // the screen now leads back to Sync with another phone.
+  testWidgets('a QR link opens Type a code with a way back to Sync',
+      (tester) async {
+    tester.view.physicalSize = const Size(360 * 3, 1600 * 3);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+    final router = GoRouter(
+        initialLocation: '/settings/sync/wifi?code=ABCDEF-GHJKMN-PQRSTV',
+        routes: [
+          GoRoute(
+              path: '/settings/sync',
+              builder: (_, _) => const Scaffold(body: Text('SYNC SCREEN'))),
+          GoRoute(
+            path: '/settings/sync/wifi',
+            builder: (_, state) => WifiSyncScreen(
+              show: state.uri.queryParameters['mode'] == 'show',
+              code: state.uri.queryParameters['code'],
+            ),
+          ),
+        ]);
+    await tester.pumpWidget(ProviderScope(
+      overrides: [householdSyncProvider.overrideWithValue(sync)],
+      child: MaterialApp.router(routerConfig: router),
+    ));
+    await frames(tester);
+    expect(find.text('Type a code'), findsOneWidget);
+
+    final back = find.byType(BackButton);
+    expect(back, findsOneWidget, reason: 'a link-opened screen needs a back');
+    await tester.tap(back);
+    await frames(tester);
+    expect(find.text('SYNC SCREEN'), findsOneWidget);
+
+    // System Back does the same instead of leaving the app.
+    router.go('/settings/sync/wifi?code=ABCDEF-GHJKMN-PQRSTV');
+    await frames(tester);
+    expect(find.text('Type a code'), findsOneWidget);
+    await tester.binding.handlePopRoute();
+    await frames(tester);
+    expect(find.text('SYNC SCREEN'), findsOneWidget);
+    await tidy(tester);
+  });
 }

@@ -24,8 +24,8 @@ class SleepRepositoryImpl implements SleepRepository {
     try {
       final logs = await _dao.getAllForBaby(babyId);
       return Success(logs.map(_toEntity).toList());
-    } catch (e) {
-      return Err(DatabaseFailure(e.toString()));
+    } catch (e, st) {
+      return Err(DatabaseFailure.from(e, st));
     }
   }
 
@@ -38,8 +38,8 @@ class SleepRepositoryImpl implements SleepRepository {
     try {
       final log = await _dao.getActiveSleep(babyId);
       return Success(log == null ? null : _toEntity(log));
-    } catch (e) {
-      return Err(DatabaseFailure(e.toString()));
+    } catch (e, st) {
+      return Err(DatabaseFailure.from(e, st));
     }
   }
 
@@ -52,8 +52,8 @@ class SleepRepositoryImpl implements SleepRepository {
     try {
       final log = await _dao.getLastSleep(babyId);
       return Success(log == null ? null : _toEntity(log));
-    } catch (e) {
-      return Err(DatabaseFailure(e.toString()));
+    } catch (e, st) {
+      return Err(DatabaseFailure.from(e, st));
     }
   }
 
@@ -63,8 +63,8 @@ class SleepRepositoryImpl implements SleepRepository {
     try {
       final logs = await _dao.getInRange(babyId, start, end);
       return Success(logs.map(_toEntity).toList());
-    } catch (e) {
-      return Err(DatabaseFailure(e.toString()));
+    } catch (e, st) {
+      return Err(DatabaseFailure.from(e, st));
     }
   }
 
@@ -73,8 +73,8 @@ class SleepRepositoryImpl implements SleepRepository {
     try {
       await _writer.put(sleepSpec, log.id, companionFields(sleepSpec, _toCompanion(log)));
       return const Success(null);
-    } catch (e) {
-      return Err(DatabaseFailure(e.toString()));
+    } catch (e, st) {
+      return Err(DatabaseFailure.from(e, st));
     }
   }
 
@@ -83,8 +83,8 @@ class SleepRepositoryImpl implements SleepRepository {
     try {
       await _writer.update(sleepSpec, log.id, companionFields(sleepSpec, _toCompanion(log)));
       return const Success(null);
-    } catch (e) {
-      return Err(DatabaseFailure(e.toString()));
+    } catch (e, st) {
+      return Err(DatabaseFailure.from(e, st));
     }
   }
 
@@ -93,8 +93,8 @@ class SleepRepositoryImpl implements SleepRepository {
     try {
       await _writer.delete(sleepSpec, id);
       return const Success(null);
-    } catch (e) {
-      return Err(DatabaseFailure(e.toString()));
+    } catch (e, st) {
+      return Err(DatabaseFailure.from(e, st));
     }
   }
 
@@ -103,8 +103,8 @@ class SleepRepositoryImpl implements SleepRepository {
     try {
       await _writer.restore(sleepSpec, log.id, companionFields(sleepSpec, _toCompanion(log)));
       return const Success(null);
-    } catch (e) {
-      return Err(DatabaseFailure(e.toString()));
+    } catch (e, st) {
+      return Err(DatabaseFailure.from(e, st));
     }
   }
 

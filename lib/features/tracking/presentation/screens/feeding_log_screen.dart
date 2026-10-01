@@ -148,11 +148,11 @@ class _FeedingLogScreenState extends ConsumerState<FeedingLogScreen> {
       );
       return;
     }
-    undo.show(
+    offerUndo(
+      undo,
       message: 'Feed deleted',
-      onUndo: () async {
-        await controller.restoreLog(deleted);
-      },
+      what: 'the feed',
+      restore: () => controller.restoreLog(deleted),
     );
     Navigator.pop(context);
   }

@@ -42,10 +42,18 @@ class DashboardScreen extends ConsumerWidget {
           ],
         ),
         actions: [
-          TextButton.icon(
-            icon: const Icon(Icons.settings),
-            label: const Text('Settings'),
-            onPressed: () => context.push('/settings'),
+          // Folds by space (fleet top-bar rule): "Settings" keeps its word
+          // while it fits beside a whole "Lullaby" and folds into its
+          // tooltip when it doesn't (it squeezed the title to "Lull…").
+          OhBarActions(
+            titleReserve: _titleWidth(context, baby.valueOrNull?.name),
+            children: [
+              OhBarAction(
+                icon: Icons.settings,
+                label: 'Settings',
+                onPressed: () => context.push('/settings'),
+              ),
+            ],
           ),
         ],
       ),
@@ -101,18 +109,21 @@ class DashboardScreen extends ConsumerWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
                       QuickLogButton(
+                        fitLabel: 'Diaper',
                         icon: Icons.restaurant,
                         label: 'Feed',
                         color: AppColorSchemes.feedColor,
                         onTap: () => _showFeedingSheet(context),
                       ),
                       QuickLogButton(
+                        fitLabel: 'Diaper',
                         icon: Icons.bedtime,
                         label: 'Sleep',
                         color: AppColorSchemes.sleepColor,
                         onTap: () => _toggleSleep(context, ref, activeBaby.id),
                       ),
                       QuickLogButton(
+                        fitLabel: 'Diaper',
                         icon: Icons.baby_changing_station,
                         label: 'Diaper',
                         color: AppColorSchemes.diaperColor,
@@ -230,6 +241,10 @@ class DashboardScreen extends ConsumerWidget {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: const Text('Wet diaper logged'),
+            // The diaper is already saved and EDIT is a convenience, so the
+            // line leaves on its own; a SnackBar with an action otherwise
+            // persists until tapped, across screens.
+            persist: false,
             action: SnackBarAction(
               label: 'EDIT',
               onPressed: () => context.push('/diaper'),
@@ -318,4 +333,31 @@ class _DailySummary extends ConsumerWidget {
       },
     );
   }
+}
+
+/// The width Home's two-line title needs ("Lullaby" over the baby's name),
+/// measured as the AppBar draws it, so the bar can fold by space.
+double _titleWidth(BuildContext context, String? babyName) {
+  final theme = Theme.of(context);
+  final scaler = MediaQuery.textScalerOf(context)
+      .clamp(maxScaleFactor: OhBarActions.appBarTitleMaxScale);
+  double width(String text, TextStyle? style) {
+    final tp = TextPainter(
+      text: TextSpan(text: text, style: style),
+      textDirection: Directionality.of(context),
+      textScaler: scaler,
+      maxLines: 1,
+    )..layout();
+    final w = tp.width;
+    tp.dispose();
+    return w;
+  }
+
+  final titleStyle =
+      theme.appBarTheme.titleTextStyle ?? theme.textTheme.titleLarge;
+  final title = width('Lullaby', titleStyle);
+  final name = babyName == null
+      ? 0.0
+      : width(babyName, titleStyle?.merge(theme.textTheme.bodySmall));
+  return title > name ? title : name;
 }

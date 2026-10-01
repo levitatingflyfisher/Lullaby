@@ -26,8 +26,8 @@ class BabyRepositoryImpl implements BabyRepository {
     try {
       final babies = await _dao.getAllBabies();
       return Success(babies.map(_toEntity).toList());
-    } catch (e) {
-      return Err(DatabaseFailure(e.toString()));
+    } catch (e, st) {
+      return Err(DatabaseFailure.from(e, st));
     }
   }
 
@@ -41,8 +41,8 @@ class BabyRepositoryImpl implements BabyRepository {
       final baby = await _dao.getBabyById(id);
       if (baby == null) return const Err(NotFoundFailure());
       return Success(_toEntity(baby));
-    } catch (e) {
-      return Err(DatabaseFailure(e.toString()));
+    } catch (e, st) {
+      return Err(DatabaseFailure.from(e, st));
     }
   }
 
@@ -59,8 +59,8 @@ class BabyRepositoryImpl implements BabyRepository {
       await _dao.setActiveBaby(baby.id);
       await _dao.setPhotoPath(baby.id, baby.photoPath);
       return const Success(null);
-    } catch (e) {
-      return Err(DatabaseFailure(e.toString()));
+    } catch (e, st) {
+      return Err(DatabaseFailure.from(e, st));
     }
   }
 
@@ -69,8 +69,8 @@ class BabyRepositoryImpl implements BabyRepository {
     try {
       await _dao.setActiveBaby(id);
       return const Success(null);
-    } catch (e) {
-      return Err(DatabaseFailure(e.toString()));
+    } catch (e, st) {
+      return Err(DatabaseFailure.from(e, st));
     }
   }
 
@@ -81,8 +81,8 @@ class BabyRepositoryImpl implements BabyRepository {
           babiesSpec, baby.id, companionFields(babiesSpec, _toCompanion(baby)));
       await _dao.setPhotoPath(baby.id, baby.photoPath);
       return const Success(null);
-    } catch (e) {
-      return Err(DatabaseFailure(e.toString()));
+    } catch (e, st) {
+      return Err(DatabaseFailure.from(e, st));
     }
   }
 
@@ -92,8 +92,8 @@ class BabyRepositoryImpl implements BabyRepository {
       // Hides the baby's records with it, on every synced phone.
       await _writer.delete(babiesSpec, id);
       return const Success(null);
-    } catch (e) {
-      return Err(DatabaseFailure(e.toString()));
+    } catch (e, st) {
+      return Err(DatabaseFailure.from(e, st));
     }
   }
 

@@ -68,7 +68,7 @@ class SleepController extends Notifier<AsyncValue<void>> {
 
     state = switch (result) {
       Success() => const AsyncData(null),
-      Err(failure: final f) => AsyncError(f.message, StackTrace.current),
+      Err(failure: final f) => AsyncError(f.cause ?? f.message, f.stackTrace ?? StackTrace.current),
     };
 
     if (result is Success) {

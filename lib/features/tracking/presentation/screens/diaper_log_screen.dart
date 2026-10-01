@@ -90,11 +90,11 @@ class _DiaperLogScreenState extends ConsumerState<DiaperLogScreen> {
       );
       return;
     }
-    undo.show(
+    offerUndo(
+      undo,
       message: 'Diaper change deleted',
-      onUndo: () async {
-        await controller.restoreLog(deleted);
-      },
+      what: 'the diaper change',
+      restore: () => controller.restoreLog(deleted),
     );
     Navigator.pop(context);
   }

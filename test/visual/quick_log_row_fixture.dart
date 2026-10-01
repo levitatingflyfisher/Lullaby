@@ -11,16 +11,19 @@ Widget buildQuickLogRow() {
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: <Widget>[
         QuickLogButton(
+            fitLabel: 'Diaper',
             icon: Icons.restaurant,
             label: 'Feed',
             color: Colors.green,
             onTap: _noop),
         QuickLogButton(
+            fitLabel: 'Diaper',
             icon: Icons.bedtime,
             label: 'Sleep',
             color: Colors.indigo,
             onTap: _noop),
         QuickLogButton(
+            fitLabel: 'Diaper',
             icon: Icons.baby_changing_station,
             label: 'Diaper',
             color: Colors.amber,

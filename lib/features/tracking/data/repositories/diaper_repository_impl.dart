@@ -24,8 +24,8 @@ class DiaperRepositoryImpl implements DiaperRepository {
     try {
       final logs = await _dao.getAllForBaby(babyId);
       return Success(logs.map(_toEntity).toList());
-    } catch (e) {
-      return Err(DatabaseFailure(e.toString()));
+    } catch (e, st) {
+      return Err(DatabaseFailure.from(e, st));
     }
   }
 
@@ -39,8 +39,8 @@ class DiaperRepositoryImpl implements DiaperRepository {
     try {
       final logs = await _dao.getInRange(babyId, start, end);
       return Success(logs.map(_toEntity).toList());
-    } catch (e) {
-      return Err(DatabaseFailure(e.toString()));
+    } catch (e, st) {
+      return Err(DatabaseFailure.from(e, st));
     }
   }
 
@@ -50,8 +50,8 @@ class DiaperRepositoryImpl implements DiaperRepository {
     try {
       final count = await _dao.countInRange(babyId, start, end);
       return Success(count);
-    } catch (e) {
-      return Err(DatabaseFailure(e.toString()));
+    } catch (e, st) {
+      return Err(DatabaseFailure.from(e, st));
     }
   }
 
@@ -62,8 +62,8 @@ class DiaperRepositoryImpl implements DiaperRepository {
       final count =
           await _dao.countByTypeInRange(babyId, type.name, start, end);
       return Success(count);
-    } catch (e) {
-      return Err(DatabaseFailure(e.toString()));
+    } catch (e, st) {
+      return Err(DatabaseFailure.from(e, st));
     }
   }
 
@@ -72,8 +72,8 @@ class DiaperRepositoryImpl implements DiaperRepository {
     try {
       final log = await _dao.getLastDiaper(babyId);
       return Success(log == null ? null : _toEntity(log));
-    } catch (e) {
-      return Err(DatabaseFailure(e.toString()));
+    } catch (e, st) {
+      return Err(DatabaseFailure.from(e, st));
     }
   }
 
@@ -82,8 +82,8 @@ class DiaperRepositoryImpl implements DiaperRepository {
     try {
       await _writer.put(diaperSpec, log.id, companionFields(diaperSpec, _toCompanion(log)));
       return const Success(null);
-    } catch (e) {
-      return Err(DatabaseFailure(e.toString()));
+    } catch (e, st) {
+      return Err(DatabaseFailure.from(e, st));
     }
   }
 
@@ -92,8 +92,8 @@ class DiaperRepositoryImpl implements DiaperRepository {
     try {
       await _writer.update(diaperSpec, log.id, companionFields(diaperSpec, _toCompanion(log)));
       return const Success(null);
-    } catch (e) {
-      return Err(DatabaseFailure(e.toString()));
+    } catch (e, st) {
+      return Err(DatabaseFailure.from(e, st));
     }
   }
 
@@ -102,8 +102,8 @@ class DiaperRepositoryImpl implements DiaperRepository {
     try {
       await _writer.delete(diaperSpec, id);
       return const Success(null);
-    } catch (e) {
-      return Err(DatabaseFailure(e.toString()));
+    } catch (e, st) {
+      return Err(DatabaseFailure.from(e, st));
     }
   }
 
@@ -112,8 +112,8 @@ class DiaperRepositoryImpl implements DiaperRepository {
     try {
       await _writer.restore(diaperSpec, log.id, companionFields(diaperSpec, _toCompanion(log)));
       return const Success(null);
-    } catch (e) {
-      return Err(DatabaseFailure(e.toString()));
+    } catch (e, st) {
+      return Err(DatabaseFailure.from(e, st));
     }
   }
 

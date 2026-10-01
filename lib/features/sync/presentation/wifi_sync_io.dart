@@ -175,8 +175,23 @@ class _WifiSyncScreenState extends ConsumerState<WifiSyncScreen> {
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(title: Text(widget.show ? 'Show a code' : 'Type a code')),
+  Widget build(BuildContext context) {
+    // Opened from the QR link, this screen is the only page: there is
+    // nothing to pop, so Back (arrow or gesture) leads to Sync with another
+    // phone instead of leaving the app.
+    final router = GoRouter.maybeOf(context);
+    final linked = router != null && !Navigator.of(context).canPop();
+    void toSync() => router!.go('/settings/sync');
+    return PopScope(
+      canPop: !linked,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop && linked) toSync();
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          leading: linked ? BackButton(onPressed: toSync) : null,
+          title: Text(widget.show ? 'Show a code' : 'Type a code'),
+        ),
         body: OhPage(
           padding: EdgeInsets.zero,
           child: ListView(
@@ -184,7 +199,9 @@ class _WifiSyncScreenState extends ConsumerState<WifiSyncScreen> {
             children: widget.show ? _showView(context) : _typeView(context),
           ),
         ),
-      );
+      ),
+    );
+  }
 
   Widget _doneView(BuildContext context) {
     final theme = Theme.of(context);

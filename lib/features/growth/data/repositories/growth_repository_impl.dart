@@ -24,8 +24,8 @@ class GrowthRepositoryImpl implements GrowthRepository {
     try {
       final records = await _dao.getAllForBaby(babyId);
       return Success(records.map(_toEntity).toList());
-    } catch (e) {
-      return Err(DatabaseFailure(e.toString()));
+    } catch (e, st) {
+      return Err(DatabaseFailure.from(e, st));
     }
   }
 
@@ -38,8 +38,8 @@ class GrowthRepositoryImpl implements GrowthRepository {
     try {
       final record = await _dao.getLatest(babyId);
       return Success(record == null ? null : _toEntity(record));
-    } catch (e) {
-      return Err(DatabaseFailure(e.toString()));
+    } catch (e, st) {
+      return Err(DatabaseFailure.from(e, st));
     }
   }
 
@@ -49,8 +49,8 @@ class GrowthRepositoryImpl implements GrowthRepository {
     try {
       final records = await _dao.getInRange(babyId, start, end);
       return Success(records.map(_toEntity).toList());
-    } catch (e) {
-      return Err(DatabaseFailure(e.toString()));
+    } catch (e, st) {
+      return Err(DatabaseFailure.from(e, st));
     }
   }
 
@@ -59,8 +59,8 @@ class GrowthRepositoryImpl implements GrowthRepository {
     try {
       await _writer.put(growthSpec, record.id, companionFields(growthSpec, _toCompanion(record)));
       return const Success(null);
-    } catch (e) {
-      return Err(DatabaseFailure(e.toString()));
+    } catch (e, st) {
+      return Err(DatabaseFailure.from(e, st));
     }
   }
 
@@ -69,8 +69,8 @@ class GrowthRepositoryImpl implements GrowthRepository {
     try {
       await _writer.update(growthSpec, record.id, companionFields(growthSpec, _toCompanion(record)));
       return const Success(null);
-    } catch (e) {
-      return Err(DatabaseFailure(e.toString()));
+    } catch (e, st) {
+      return Err(DatabaseFailure.from(e, st));
     }
   }
 
@@ -79,8 +79,8 @@ class GrowthRepositoryImpl implements GrowthRepository {
     try {
       await _writer.delete(growthSpec, id);
       return const Success(null);
-    } catch (e) {
-      return Err(DatabaseFailure(e.toString()));
+    } catch (e, st) {
+      return Err(DatabaseFailure.from(e, st));
     }
   }
 
@@ -89,8 +89,8 @@ class GrowthRepositoryImpl implements GrowthRepository {
     try {
       await _writer.restore(growthSpec, record.id, companionFields(growthSpec, _toCompanion(record)));
       return const Success(null);
-    } catch (e) {
-      return Err(DatabaseFailure(e.toString()));
+    } catch (e, st) {
+      return Err(DatabaseFailure.from(e, st));
     }
   }
 

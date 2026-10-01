@@ -52,7 +52,7 @@ class MedicineController extends Notifier<AsyncValue<void>> {
           return Success(log);
         }(),
       Err(failure: final f) => () {
-          state = AsyncError(f.message, StackTrace.current);
+          state = AsyncError(f.cause ?? f.message, f.stackTrace ?? StackTrace.current);
           return Err<MedicineLogEntity>(f);
         }(),
     };

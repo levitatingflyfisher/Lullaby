@@ -275,11 +275,11 @@ class _GrowthAddScreenState extends ConsumerState<GrowthAddScreen> {
       );
       return;
     }
-    undo.show(
+    offerUndo(
+      undo,
       message: 'Measurement deleted',
-      onUndo: () async {
-        await controller.restoreRecord(deleted);
-      },
+      what: 'the measurement',
+      restore: () => controller.restoreRecord(deleted),
     );
     Navigator.pop(context);
   }

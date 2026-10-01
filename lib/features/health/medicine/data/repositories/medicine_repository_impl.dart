@@ -24,8 +24,8 @@ class MedicineRepositoryImpl implements MedicineRepository {
     try {
       final logs = await _dao.getAllForBaby(babyId);
       return Success(logs.map(_toEntity).toList());
-    } catch (e) {
-      return Err(DatabaseFailure(e.toString()));
+    } catch (e, st) {
+      return Err(DatabaseFailure.from(e, st));
     }
   }
 
@@ -39,8 +39,8 @@ class MedicineRepositoryImpl implements MedicineRepository {
     try {
       final logs = await _dao.getInRange(babyId, start, end);
       return Success(logs.map(_toEntity).toList());
-    } catch (e) {
-      return Err(DatabaseFailure(e.toString()));
+    } catch (e, st) {
+      return Err(DatabaseFailure.from(e, st));
     }
   }
 
@@ -49,8 +49,8 @@ class MedicineRepositoryImpl implements MedicineRepository {
     try {
       await _writer.put(medicineSpec, log.id, companionFields(medicineSpec, _toCompanion(log)));
       return const Success(null);
-    } catch (e) {
-      return Err(DatabaseFailure(e.toString()));
+    } catch (e, st) {
+      return Err(DatabaseFailure.from(e, st));
     }
   }
 
@@ -59,8 +59,8 @@ class MedicineRepositoryImpl implements MedicineRepository {
     try {
       await _writer.update(medicineSpec, log.id, companionFields(medicineSpec, _toCompanion(log)));
       return const Success(null);
-    } catch (e) {
-      return Err(DatabaseFailure(e.toString()));
+    } catch (e, st) {
+      return Err(DatabaseFailure.from(e, st));
     }
   }
 
@@ -69,8 +69,8 @@ class MedicineRepositoryImpl implements MedicineRepository {
     try {
       await _writer.delete(medicineSpec, id);
       return const Success(null);
-    } catch (e) {
-      return Err(DatabaseFailure(e.toString()));
+    } catch (e, st) {
+      return Err(DatabaseFailure.from(e, st));
     }
   }
 
@@ -79,8 +79,8 @@ class MedicineRepositoryImpl implements MedicineRepository {
     try {
       await _writer.restore(medicineSpec, log.id, companionFields(medicineSpec, _toCompanion(log)));
       return const Success(null);
-    } catch (e) {
-      return Err(DatabaseFailure(e.toString()));
+    } catch (e, st) {
+      return Err(DatabaseFailure.from(e, st));
     }
   }
 

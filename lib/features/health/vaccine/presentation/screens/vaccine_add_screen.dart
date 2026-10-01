@@ -146,11 +146,11 @@ class _VaccineAddScreenState extends ConsumerState<VaccineAddScreen> {
       );
       return;
     }
-    undo.show(
+    offerUndo(
+      undo,
       message: 'Vaccine record deleted',
-      onUndo: () async {
-        await controller.restore(deleted);
-      },
+      what: 'the vaccine record',
+      restore: () => controller.restore(deleted),
     );
     Navigator.pop(context);
   }

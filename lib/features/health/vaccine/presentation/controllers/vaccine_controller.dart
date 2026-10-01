@@ -54,7 +54,7 @@ class VaccineController extends Notifier<AsyncValue<void>> {
           return Success(record);
         }(),
       Err(failure: final f) => () {
-          state = AsyncError(f.message, StackTrace.current);
+          state = AsyncError(f.cause ?? f.message, f.stackTrace ?? StackTrace.current);
           return Err<VaccineRecordEntity>(f);
         }(),
     };

@@ -24,8 +24,8 @@ class VaccineRepositoryImpl implements VaccineRepository {
     try {
       final records = await _dao.getAllForBaby(babyId);
       return Success(records.map(_toEntity).toList());
-    } catch (e) {
-      return Err(DatabaseFailure(e.toString()));
+    } catch (e, st) {
+      return Err(DatabaseFailure.from(e, st));
     }
   }
 
@@ -38,8 +38,8 @@ class VaccineRepositoryImpl implements VaccineRepository {
     try {
       final records = await _dao.getUpcoming(babyId);
       return Success(records.map(_toEntity).toList());
-    } catch (e) {
-      return Err(DatabaseFailure(e.toString()));
+    } catch (e, st) {
+      return Err(DatabaseFailure.from(e, st));
     }
   }
 
@@ -49,8 +49,8 @@ class VaccineRepositoryImpl implements VaccineRepository {
     try {
       final records = await _dao.getAdministered(babyId);
       return Success(records.map(_toEntity).toList());
-    } catch (e) {
-      return Err(DatabaseFailure(e.toString()));
+    } catch (e, st) {
+      return Err(DatabaseFailure.from(e, st));
     }
   }
 
@@ -59,8 +59,8 @@ class VaccineRepositoryImpl implements VaccineRepository {
     try {
       await _writer.put(vaccineSpec, record.id, companionFields(vaccineSpec, _toCompanion(record)));
       return const Success(null);
-    } catch (e) {
-      return Err(DatabaseFailure(e.toString()));
+    } catch (e, st) {
+      return Err(DatabaseFailure.from(e, st));
     }
   }
 
@@ -69,8 +69,8 @@ class VaccineRepositoryImpl implements VaccineRepository {
     try {
       await _writer.update(vaccineSpec, record.id, companionFields(vaccineSpec, _toCompanion(record)));
       return const Success(null);
-    } catch (e) {
-      return Err(DatabaseFailure(e.toString()));
+    } catch (e, st) {
+      return Err(DatabaseFailure.from(e, st));
     }
   }
 
@@ -79,8 +79,8 @@ class VaccineRepositoryImpl implements VaccineRepository {
     try {
       await _writer.delete(vaccineSpec, id);
       return const Success(null);
-    } catch (e) {
-      return Err(DatabaseFailure(e.toString()));
+    } catch (e, st) {
+      return Err(DatabaseFailure.from(e, st));
     }
   }
 
@@ -89,8 +89,8 @@ class VaccineRepositoryImpl implements VaccineRepository {
     try {
       await _writer.restore(vaccineSpec, record.id, companionFields(vaccineSpec, _toCompanion(record)));
       return const Success(null);
-    } catch (e) {
-      return Err(DatabaseFailure(e.toString()));
+    } catch (e, st) {
+      return Err(DatabaseFailure.from(e, st));
     }
   }
 

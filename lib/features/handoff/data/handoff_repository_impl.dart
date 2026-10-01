@@ -43,8 +43,8 @@ class HandoffRepositoryImpl implements HandoffRepository {
     try {
       await _writer.addHandoffNote(babyId: babyId, text: t, at: _clock());
       return const Success(null);
-    } catch (e) {
-      return Err(DatabaseFailure(e.toString()));
+    } catch (e, st) {
+      return Err(DatabaseFailure.from(e, st));
     }
   }
 }

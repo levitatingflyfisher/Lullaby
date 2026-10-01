@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openhearth_design/openhearth_design.dart';
 
+import '../core/errors/result.dart';
+
 /// The one Undo offer for the whole app.
 ///
 /// Deliberate deletes happen on edit forms that close straight after, so an
@@ -65,4 +67,24 @@ class _UndoHostState extends ConsumerState<UndoHost> {
   Widget build(BuildContext context) {
     return Overlay(initialEntries: [_entry]);
   }
+}
+
+/// Offers Undo for a deliberate delete whose row was captured before the
+/// delete; [restore] re-inserts it. If the re-insert fails, the offer comes
+/// back saying so ("Couldn’t bring back [what]. Try again.") instead of the
+/// bar vanishing with the entry; the captured row is kept for the retry.
+void offerUndo(
+  OhUndoController undo, {
+  required String message,
+  required String what,
+  required Future<Result<void>> Function() restore,
+}) {
+  Future<void> attempt() async {
+    if (await restore() is Err) {
+      undo.show(
+          message: 'Couldn’t bring back $what. Try again.', onUndo: attempt);
+    }
+  }
+
+  undo.show(message: message, onUndo: attempt);
 }
